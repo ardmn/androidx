@@ -84,13 +84,16 @@ private const val ScreenSizeDp = 227
 class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     @get:Rule val playerRule = RcPlayerTestRule()
 
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
     @Test
     fun bottomGap_matchesWearMaterial3EdgeButton() {
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
         val expectedGap =
-            ScreenSize - playerRule.wearMaterial3ContainerBounds(showWearMaterial3).bottom
+            playerRule.screenBounds().bottom -
+                playerRule.wearMaterial3ContainerBounds(showWearMaterial3).bottom
 
-        val actualGap = ScreenSize - playerRule.containerBounds().bottom
+        val actualGap = playerRule.screenBounds().bottom - playerRule.containerBounds().bottom
 
         assertWithMessage("Wear Material3 bottom gap").that(expectedGap).isGreaterThan(0.dp)
         assertDpEqual("Bottom gap", actualGap, expectedGap)
@@ -129,11 +132,12 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         val showWearMaterial3 =
             playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
         val wearMaterial3Bottom = playerRule.wearMaterial3ContainerBounds(showWearMaterial3).bottom
+        val screenBottom = playerRule.screenBounds().bottom
 
-        playerRule.tapAtCenterX((wearMaterial3Bottom + ScreenSize) / 2)
+        playerRule.tapAtCenterX((wearMaterial3Bottom + screenBottom) / 2)
 
         assertWithMessage("Wear Material3 bottom gap")
-            .that(ScreenSize - wearMaterial3Bottom)
+            .that(screenBottom - wearMaterial3Bottom)
             .isGreaterThan(0.dp)
         assertThat(clicks).isEmpty()
     }
@@ -191,8 +195,6 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     ) {
         override fun toString(): String = name
     }
-
-    private val context: Context = ApplicationProvider.getApplicationContext()
 
     /**
      * Shows a [RemoteEdgeButton] of [buttonSize], with a [ContainerColor] container, at the bottom
@@ -280,10 +282,14 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         return bounds
     }
 
-    /** Taps the screen at its horizontal centre, [y] below its top. */
+    /** The bounds of the [ScreenSize] screen that shows both buttons. */
+    private fun RcPlayerTestRule.screenBounds(): DpRect = onNodeWithTag(ScreenTag).getBoundsInRoot()
+
+    /** Taps the screen at its horizontal centre, at [y] in root coordinates. */
     private fun RcPlayerTestRule.tapAtCenterX(y: Dp) {
+        val screenTop = screenBounds().top
         onNodeWithTag(ScreenTag).performTouchInput {
-            click(Offset(centerX, y.toPx()))
+            click(Offset(centerX, (y - screenTop).toPx()))
         }
         waitForIdle()
     }
@@ -393,10 +399,10 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         private val ContainerColor = Color.Red
 
         /**
-         * Half of a colour channel. Wear Material3 darkens the container edges with a radial
-         * gradient and both renderers anti-alias the shape, so container pixels are not exactly
-         * [ContainerColor]. [containerPixels_matchWearMaterial3EdgeButton] asserts that both
-         * containers are found with it.
+         * Half of a colour channel. Both renderers anti-alias the curved edges of the shape, so the
+         * edge pixels of the container are not exactly [ContainerColor].
+         * [containerPixels_matchWearMaterial3EdgeButton] asserts that both containers are found
+         * with it.
          */
         private const val ColorChannelTolerance = 0.5f
     }
