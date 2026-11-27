@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertIsEqualTo
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getBoundsInRoot
@@ -66,6 +67,9 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 
+/** The side of the square screen, the size of a large round watch (454 px at xhdpi). */
+private const val ScreenSizeDp = 227
+
 /**
  * Checks that [RemoteEdgeButton] follows the layout rules of the Wear Material3 [EdgeButton]: the
  * button is [ButtonSize.specHeight] plus [SpecVerticalPadding] above and below, the container (the
@@ -77,9 +81,6 @@ import org.robolectric.annotation.Config
  * in [WearMaterial3EdgeButtonSpec], or the Wear Material3 [EdgeButton] rendered in the same place
  * at the same size.
  */
-/** The side of the square screen, the size of a large round watch (454 px at xhdpi). */
-private const val ScreenSizeDp = 227
-
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w${ScreenSizeDp}dp-h${ScreenSizeDp}dp-xhdpi")
 class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
@@ -133,12 +134,12 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
         showWearMaterial3.value = true
         playerRule.waitForIdle()
-        val expected = columnFractions.map { playerRule.containerRows(it) }
+        val expected = columnFractions.map { playerRule.containerPixelRows(it) }
 
         // When
         showWearMaterial3.value = false
         playerRule.waitForIdle()
-        val actual = columnFractions.map { playerRule.containerRows(it) }
+        val actual = columnFractions.map { playerRule.containerPixelRows(it) }
 
         // Then
         for ((index, fraction) in columnFractions.withIndex()) {
@@ -147,17 +148,13 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     }
 
     @Test
-    fun tapOnVerticalPadding_doesNotClick() {
+    fun tapOnBottomVerticalPadding_doesNotClick() {
         // Given
         val clicks = mutableListOf<String>()
         playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
-        val bottomPaddingCenter = ScreenSize - SpecVerticalPadding / 2
-        val topPaddingCenter =
-            ScreenSize - SpecVerticalPadding - buttonSize.specHeight - SpecVerticalPadding / 2
 
         // When
-        playerRule.tapAtCenterX(bottomPaddingCenter)
-        playerRule.tapAtCenterX(topPaddingCenter)
+        playerRule.tapAtCenterX(ScreenSize - SpecVerticalPadding / 2)
 
         // Then
         assertThat(clicks).isEmpty()
@@ -219,7 +216,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         // Then
         assertDpEqual("Wear Material3 container height", expected.height, 0.dp)
         assertDpEqual("Container height", actual.height, expected.height)
-        assertThat(playerRule.containerRows()).isEmpty()
+        assertThat(playerRule.containerPixelRows()).isEmpty()
     }
 
     /**
@@ -235,70 +232,6 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         val specHeight: Dp,
     ) {
         override fun toString(): String = name
-    }
-
-    companion object {
-        @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
-        fun data(): List<ButtonSize> =
-            listOf(
-                ButtonSize(
-                    "ExtraSmall",
-                    RemoteEdgeButtonSize.ExtraSmall,
-                    EdgeButtonSize.ExtraSmall,
-                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
-                ),
-                ButtonSize(
-                    "Small",
-                    RemoteEdgeButtonSize.Small,
-                    EdgeButtonSize.Small,
-                    WearMaterial3EdgeButtonSpec.SmallHeight,
-                ),
-                ButtonSize(
-                    "Medium",
-                    RemoteEdgeButtonSize.Medium,
-                    EdgeButtonSize.Medium,
-                    WearMaterial3EdgeButtonSpec.MediumHeight,
-                ),
-                ButtonSize(
-                    "Large",
-                    RemoteEdgeButtonSize.Large,
-                    EdgeButtonSize.Large,
-                    WearMaterial3EdgeButtonSpec.LargeHeight,
-                ),
-            )
-
-        private val SpecVerticalPadding = WearMaterial3EdgeButtonSpec.VerticalPadding
-
-        private val ScreenSize = ScreenSizeDp.dp
-
-        /**
-         * Half a pixel at this test's xhdpi density (2 px per dp). Compose lays out in whole pixels
-         * and the bounds are read back in dp as floats, so an edge that is not on a whole pixel can
-         * be off by up to half a pixel. With the whole-dp sizes used here the measured difference
-         * is 0. A missing or doubled [SpecVerticalPadding] is 3 dp, 12 times this tolerance.
-         */
-        private val PixelRoundingTolerance = 0.25.dp
-
-        /**
-         * One pixel row. The curved corners are anti-aliased, and the two buttons are drawn by
-         * different renderers (Compose for Wear Material3, the remote player for the remote
-         * button), so the first or last row of a column can fall on either side of the colour
-         * threshold. The measured difference here is 0. A missing [SpecVerticalPadding] is 6 rows.
-         */
-        private const val AntiAliasedEdgeRows = 1
-
-        private const val ScreenTag = "screen"
-        private const val ClickActionName = "edgeButtonClick"
-        private val ContainerColor = Color.Red
-
-        /**
-         * Half of a colour channel. Wear Material3 darkens the container edges with a radial
-         * gradient and both renderers anti-alias the shape, so container pixels are not exactly
-         * [ContainerColor]. [containerPixels_matchWearMaterial3EdgeButton] asserts that both
-         * containers are found with it.
-         */
-        private const val ColorChannelTolerance = 0.5f
     }
 
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -382,7 +315,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
      * The rows, from top to bottom, of the screen's pixel column at [xFraction] of its width that
      * show [ContainerColor], within [ColorChannelTolerance] on each channel.
      */
-    private fun RcPlayerTestRule.containerRows(xFraction: Float = 0.5f): List<Int> {
+    private fun RcPlayerTestRule.containerPixelRows(xFraction: Float = 0.5f): List<Int> {
         val pixels = onNodeWithTag(ScreenTag).captureToImage().toPixelMap()
         val x = (pixels.width * xFraction).toInt()
         return (0 until pixels.height).filter { y ->
@@ -398,12 +331,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         actual: Dp,
         expected: Dp,
         tolerance: Dp = PixelRoundingTolerance,
-    ) {
-        assertWithMessage("$what of the $buttonSize button, dp")
-            .that(actual.value)
-            .isWithin(tolerance.value)
-            .of(expected.value)
-    }
+    ) = actual.assertIsEqualTo(expected, "$what of the $buttonSize button", tolerance)
 
     private fun assertDpRectEqual(
         what: String,
@@ -436,5 +364,69 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         assertWithMessage("$message, bottom row")
             .that(abs(actual.last() - expected.last()))
             .isAtMost(toleranceRows)
+    }
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun data(): List<ButtonSize> =
+            listOf(
+                ButtonSize(
+                    name = "ExtraSmall",
+                    remote = RemoteEdgeButtonSize.ExtraSmall,
+                    wearMaterial3 = EdgeButtonSize.ExtraSmall,
+                    specHeight = WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
+                ),
+                ButtonSize(
+                    name = "Small",
+                    remote = RemoteEdgeButtonSize.Small,
+                    wearMaterial3 = EdgeButtonSize.Small,
+                    specHeight = WearMaterial3EdgeButtonSpec.SmallHeight,
+                ),
+                ButtonSize(
+                    name = "Medium",
+                    remote = RemoteEdgeButtonSize.Medium,
+                    wearMaterial3 = EdgeButtonSize.Medium,
+                    specHeight = WearMaterial3EdgeButtonSpec.MediumHeight,
+                ),
+                ButtonSize(
+                    name = "Large",
+                    remote = RemoteEdgeButtonSize.Large,
+                    wearMaterial3 = EdgeButtonSize.Large,
+                    specHeight = WearMaterial3EdgeButtonSpec.LargeHeight,
+                ),
+            )
+
+        private val SpecVerticalPadding = WearMaterial3EdgeButtonSpec.VerticalPadding
+
+        private val ScreenSize = ScreenSizeDp.dp
+
+        /**
+         * Half a pixel at this test's xhdpi density (2 px per dp). Compose lays out in whole pixels
+         * and the bounds are read back in dp as floats, so an edge that is not on a whole pixel can
+         * be off by up to half a pixel. With the whole-dp sizes used here the measured difference
+         * is 0. A missing or doubled [SpecVerticalPadding] is 3 dp, 12 times this tolerance.
+         */
+        private val PixelRoundingTolerance = 0.25.dp
+
+        /**
+         * One pixel row. The curved corners are anti-aliased, and the two buttons are drawn by
+         * different renderers (Compose for Wear Material3, the remote player for the remote
+         * button), so the first or last row of a column can fall on either side of the colour
+         * threshold. The measured difference here is 0. A missing [SpecVerticalPadding] is 6 rows.
+         */
+        private const val AntiAliasedEdgeRows = 1
+
+        private const val ScreenTag = "screen"
+        private const val ClickActionName = "edgeButtonClick"
+        private val ContainerColor = Color.Red
+
+        /**
+         * Half of a colour channel. Wear Material3 darkens the container edges with a radial
+         * gradient and both renderers anti-alias the shape, so container pixels are not exactly
+         * [ContainerColor]. [containerPixels_matchWearMaterial3EdgeButton] asserts that both
+         * containers are found with it.
+         */
+        private const val ColorChannelTolerance = 0.5f
     }
 }

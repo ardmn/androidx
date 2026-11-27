@@ -37,4 +37,16 @@ internal object WearMaterial3EdgeButtonSpec {
 
     /** `EdgeButtonSize.Large.maximumHeight`: the container height. */
     val LargeHeight = 96.dp
+
+    /** `EXTRA_SMALL_ELLIPSIS_HEIGHT`: the ellipse height of the shape at the ExtraSmall size. */
+    val ExtraSmallEllipseHeight = 58.dp
+
+    /** `BUTTON_TO_ELLIPSIS_RATIO`: how fast the ellipse grows with the button height. */
+    const val ButtonToEllipseRatio = 1.42f
+
+    /**
+     * `TARGET_SIDE_PADDING`: the horizontal distance from the side of the button to the screen
+     * edge.
+     */
+    val TargetSidePadding = 20.dp
 }

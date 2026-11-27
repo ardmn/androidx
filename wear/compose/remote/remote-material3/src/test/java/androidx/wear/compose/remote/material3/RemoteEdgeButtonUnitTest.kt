@@ -94,10 +94,26 @@ class RemoteEdgeButtonUnitTest {
 
         val sizes =
             listOf(
-                "ExtraSmall" to RemoteEdgeButtonSize.ExtraSmall,
-                "Small" to RemoteEdgeButtonSize.Small,
-                "Medium" to RemoteEdgeButtonSize.Medium,
-                "Large" to RemoteEdgeButtonSize.Large,
+                Triple(
+                    "ExtraSmall",
+                    RemoteEdgeButtonSize.ExtraSmall,
+                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
+                ),
+                Triple(
+                    "Small",
+                    RemoteEdgeButtonSize.Small,
+                    WearMaterial3EdgeButtonSpec.SmallHeight,
+                ),
+                Triple(
+                    "Medium",
+                    RemoteEdgeButtonSize.Medium,
+                    WearMaterial3EdgeButtonSpec.MediumHeight,
+                ),
+                Triple(
+                    "Large",
+                    RemoteEdgeButtonSize.Large,
+                    WearMaterial3EdgeButtonSpec.LargeHeight,
+                ),
             )
 
         val activeDocument = mutableStateOf<CoreDocument?>(null)
@@ -113,7 +129,7 @@ class RemoteEdgeButtonUnitTest {
             }
         }
 
-        for ((name, buttonSize) in sizes) {
+        for ((name, buttonSize, specHeight) in sizes) {
             val label = "Confirm $name action with long label"
             val document =
                 captureRule.captureDocument(
@@ -145,7 +161,7 @@ class RemoteEdgeButtonUnitTest {
             val expectedMaxWidthPx =
                 expectedEdgeButtonContentWidthDp(
                     widthPx / density,
-                    buttonSize.maximumHeight.constantValue,
+                    specHeight.value,
                 ) * density
 
             val rowDims =
@@ -179,9 +195,9 @@ class RemoteEdgeButtonUnitTest {
     private fun expectedEdgeButtonContentWidthDp(widthDp: Float, heightDp: Float): Float {
         val extraSmallHeight = WearMaterial3EdgeButtonSpec.ExtraSmallHeight.value
         val bottomPadding = WearMaterial3EdgeButtonSpec.VerticalPadding.value
-        val extraSmallEllipseHeight = 58f
-        val buttonToEllipseRatio = 1.42f
-        val targetSidePadding = 20f
+        val extraSmallEllipseHeight = WearMaterial3EdgeButtonSpec.ExtraSmallEllipseHeight.value
+        val buttonToEllipseRatio = WearMaterial3EdgeButtonSpec.ButtonToEllipseRatio
+        val targetSidePadding = WearMaterial3EdgeButtonSpec.TargetSidePadding.value
 
         val finalFadeProgress = (1f - heightDp / extraSmallHeight).coerceIn(0f, 1f)
         val ellipseHeight =

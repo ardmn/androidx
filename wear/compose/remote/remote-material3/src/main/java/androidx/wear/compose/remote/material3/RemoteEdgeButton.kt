@@ -186,8 +186,9 @@ public fun RemoteEdgeButton(
 /**
  * Size of the [RemoteEdgeButton].
  *
- * @param maximumHeight The height of the button's container when the caller sets no height. The
- *   button adds [RemoteEdgeButtonDefaults.VerticalPadding] above and below it.
+ * @param maximumHeight The height of the button's container when the caller sets no height and the
+ *   parent has room for it. The button adds [RemoteEdgeButtonDefaults.VerticalPadding] above and
+ *   below it.
  */
 @Immutable
 public class RemoteEdgeButtonSize internal constructor(public val maximumHeight: RemoteDp) {
