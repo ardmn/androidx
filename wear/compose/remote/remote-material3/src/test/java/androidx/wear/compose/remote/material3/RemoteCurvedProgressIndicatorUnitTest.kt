@@ -31,10 +31,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Pixel tests of the full ring rule of the `sweepAngle` KDoc: with 360 degrees or more, the
- * indicator is a full ring at progress 1f, and with a gap and a collapsible dot its two ends merge
- * in the last part of the progress before 1f. Below 360 degrees, the indicator and its round caps
- * stay within the sweep, and before the ends merge a full circle starts at `startAngle`.
+ * Pixel tests of the `sweepAngle` KDoc: a sweep of 360 degrees or more is a full ring at progress
+ * 1f, and a shorter sweep keeps the indicator and its round caps inside it.
  */
 @Config(sdk = [35], qualifiers = "w1000dp-h500dp-mdpi")
 @RunWith(RobolectricTestRunner::class)
@@ -235,11 +233,8 @@ class RemoteCurvedProgressIndicatorUnitTest {
     }
 
     /**
-     * The `sweepAngle` KDoc: with a gap and a collapsible dot, the two ends merge gradually rather
-     * than snapping closed at progress 1f. [RemoteCircularProgressIndicator] closes a full circle
-     * the same way, shrinking its gap with the rest of the track as progress approaches 1f, and
-     * Wear Material3 `CircularProgressIndicator` doesn't snap closed either, it animates the merge
-     * of its gap once progress reaches 1f.
+     * With a gap and a collapsible dot, the two ends merge before progress 1f rather than snapping
+     * closed at 1f, as [RemoteCircularProgressIndicator] closes its gap.
      */
     @Test
     fun fullCircle_progressApproachingOne_closesPinchContinuously() {

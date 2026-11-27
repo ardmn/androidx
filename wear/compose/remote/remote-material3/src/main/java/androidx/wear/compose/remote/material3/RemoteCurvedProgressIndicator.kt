@@ -361,24 +361,20 @@ private fun calculateCollapsibleArcParams(
             ifFalse = 0f.rf,
         )
 
-    // On a full circle, the round caps at both ends of the indicator merge while it slides into
-    // its end, so that at progress 1 it closes into a ring without a pinch at its start. Half of
-    // the closing sweep moves the start back, the other half moves the end forward. Without a slide
-    // (a gap of 0, or a dot that doesn't collapse), it closes at progress 1. A dot under the min
-    // progress, on a circle too short for its gap and thickness, is left as it is.
-    val closingFraction = isOne.select(ifTrue = 1f.rf, ifFalse = outroSlideProgress)
-    // Selects on isFullCircle first, so that a constant sweep under 360 folds this to 0.
-    val closingSweep =
+    // On a full circle, the two end caps overlap by up to one thickness, half at each end, so the
+    // ring closes at progress 1 without a pinch. A constant sweep under 360 folds this to 0.
+    val capMergeProgress = isOne.select(ifTrue = 1f.rf, ifFalse = outroSlideProgress)
+    val capOverlapDegrees =
         isFullCircle.select(
             ifTrue =
                 underMinProgress.select(
                     ifTrue = 0f.rf,
-                    ifFalse = thicknessDegrees * closingFraction,
+                    ifFalse = thicknessDegrees * capMergeProgress,
                 ),
             ifFalse = 0f.rf,
         )
 
-    val activeStartShift = -halfThicknessDegrees * (1f.rf - activeScale) - closingSweep / 2f.rf
+    val activeStartShift = -halfThicknessDegrees * (1f.rf - activeScale) - capOverlapDegrees / 2f.rf
     val shiftedActiveStartBase = drawActiveStartBase + activeStartShift
 
     val maxActiveSweep = max(0f.rf, sweepAngle - gapAngleDegrees - 2f.rf * thicknessDegrees)
@@ -391,14 +387,14 @@ private fun calculateCollapsibleArcParams(
             ifTrue = MIN_SWEEP_ANGLE,
             ifFalse =
                 isOne.select(
-                    ifTrue = sweepAngle - thicknessDegrees + closingSweep,
+                    ifTrue = sweepAngle - thicknessDegrees + capOverlapDegrees,
                     ifFalse =
                         overMaxProgress.select(
                             ifTrue =
                                 activeSweepBase +
                                     thicknessDegrees * (1.0f.rf - remainingScale) +
                                     gapAngleDegrees * outroSlideProgress +
-                                    closingSweep,
+                                    capOverlapDegrees,
                             ifFalse = activeSweepBase,
                         ),
                 ),
@@ -506,10 +502,8 @@ private fun calculateAnimatedProgress(
 
     // Guards very short arcs, where the two ends would take more than the whole arc.
     val clampedEndFraction = min(endFraction, 0.5f.rf)
-    // The same as e * introScale + (1 - 2 * e) * barProgress + e * outroScale, with e the
-    // clampedEndFraction, written so that it is exactly 1 once the bar and both springs
-    // reach 1, and exactly 0 at their start, without float rounding. The geometry checks for
-    // progress 1 exactly, for example to close a full circle.
+    // e * introScale + (1 - 2e) * barProgress + e * outroScale, regrouped to be exactly 1 when all
+    // three are 1: the full ring closes only at progress >= 1.
     val easedProgress =
         barProgress +
             clampedEndFraction * (introScale - barProgress) +
