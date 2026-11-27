@@ -362,7 +362,8 @@ private fun calculateCollapsibleArcParams(
         )
 
     // On a full circle, the two end caps overlap by up to one thickness, half at each end, so the
-    // ring closes at progress 1 without a pinch. A constant sweep under 360 folds this to 0.
+    // ring closes at progress 1 without a pinch; a dot under the min progress keeps its caps.
+    // isFullCircle is the outer select so that a constant sweep under 360 folds this to 0.
     val capMergeProgress = isOne.select(ifTrue = 1f.rf, ifFalse = outroSlideProgress)
     val capOverlapDegrees =
         isFullCircle.select(
@@ -503,7 +504,7 @@ private fun calculateAnimatedProgress(
     // Guards very short arcs, where the two ends would take more than the whole arc.
     val clampedEndFraction = min(endFraction, 0.5f.rf)
     // e * introScale + (1 - 2e) * barProgress + e * outroScale, regrouped to be exactly 1 when all
-    // three are 1: the full ring closes only at progress >= 1.
+    // three are 1, which isOne needs to close the ring.
     val easedProgress =
         barProgress +
             clampedEndFraction * (introScale - barProgress) +
