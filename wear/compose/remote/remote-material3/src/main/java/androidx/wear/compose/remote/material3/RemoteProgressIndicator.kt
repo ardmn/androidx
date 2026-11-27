@@ -63,6 +63,13 @@ internal fun animateProgress(
 internal fun circularFullSweep(startAngle: RemoteFloat, endAngle: RemoteFloat): RemoteFloat =
     360f.rf - ((startAngle - endAngle) % 360f.rf + 360f.rf) % 360f.rf
 
+/**
+ * Returns whether an arc sweeping [sweepAngle] degrees is a full circle, which a progress indicator
+ * closes into a ring at full progress.
+ */
+internal fun isFullCircleSweep(sweepAngle: RemoteFloat): RemoteBoolean =
+    sweepAngle.isGreaterThanOrEqualTo(360f.rf)
+
 /** The geometry of the ring of a circular progress indicator, centered in its canvas. */
 internal class CircularArcGeometry(
     /** The stroke width in px, with a negative stroke width coerced to 0. */

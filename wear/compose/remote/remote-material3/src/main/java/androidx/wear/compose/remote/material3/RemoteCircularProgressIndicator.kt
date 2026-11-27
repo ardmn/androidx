@@ -98,7 +98,7 @@ public fun RemoteCircularProgressIndicator(
             startAngle = startAngle,
             sweepAngle = sweepAngle,
             fullSweep = fullSweep,
-            isFullCircle = fullSweep.isGreaterThanOrEqualTo(360f.rf),
+            isFullCircle = isFullCircleSweep(fullSweep),
             strokeWidth = strokeWidth,
             gapSize = gapSize,
             colors = colors,

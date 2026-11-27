@@ -73,7 +73,8 @@ private val RADIANS_TO_DEGREES = (180f / PI.toFloat()).rf
  *   o'clock position. For example, 135 is bottom left.
  * @param sweepAngle The total sweep angle (magnitude) of the progress arc in degrees, for example,
  *   90 degrees. Negative values are coerced to 0 (nothing is drawn when [sweepAngle] is 0 or
- *   negative); use [reverseDirection] to sweep counter-clockwise.
+ *   negative); use [reverseDirection] to sweep counter-clockwise. With 360 degrees or more, the
+ *   indicator closes into a full ring at progress 1f.
  * @param colors [RemoteProgressIndicatorColors] that will be used to resolve the indicator and
  *   track color.
  * @param strokeWidth Width of the arc in dp. Negative values are coerced to 0; nothing is drawn
@@ -148,7 +149,9 @@ public fun RemoteCurvedProgressIndicator(
  *   o'clock position. For example, 135 is bottom left.
  * @param sweepAngle The total sweep angle (magnitude) of the progress arc in degrees, for example,
  *   90 degrees. Negative values are coerced to 0 (nothing is drawn when [sweepAngle] is 0 or
- *   negative); use [reverseDirection] to sweep counter-clockwise.
+ *   negative); use [reverseDirection] to sweep counter-clockwise. With 360 degrees or more, the
+ *   indicator is a full ring at progress 1f: once the outro finishes when counting up, and until
+ *   progress leaves 1f when counting down.
  * @param colors [RemoteProgressIndicatorColors] that will be used to resolve the indicator and
  *   track color.
  * @param strokeWidth Width of the arc in dp. Negative values are coerced to 0; nothing is drawn
@@ -225,6 +228,7 @@ private fun RemoteCurvedProgressIndicatorImpl(
             coercedSweepAngle
                 .isLessThanOrEqualTo(0f.rf)
                 .select(ifTrue = true.rb, ifFalse = coercedStrokeWidth.isLessThanOrEqualTo(0.rdp))
+        val isFullCircle = isFullCircleSweep(coercedSweepAngle)
         val dotCollapseFreezeFraction = dotCollapsible.select(ifTrue = 0f.rf, ifFalse = 1f.rf)
 
         val strokePx = coercedStrokeWidth.toPx()
@@ -270,6 +274,7 @@ private fun RemoteCurvedProgressIndicatorImpl(
                 drawActiveStartBase = drawActiveStartBase,
                 totalTravel = totalTravel,
                 isNothingDrawn = isNothingDrawn,
+                isFullCircle = isFullCircle,
             )
 
         drawCurvedProgressArcs(
@@ -315,6 +320,7 @@ private fun calculateCollapsibleArcParams(
     drawActiveStartBase: RemoteFloat,
     totalTravel: RemoteFloat,
     isNothingDrawn: RemoteBoolean,
+    isFullCircle: RemoteBoolean,
 ): CurvedArcParams {
     val isZero = animatedProgress.isLessThanOrEqualTo(0f.rf)
     val isOne = animatedProgress.isGreaterThanOrEqualTo(1f.rf)
@@ -353,7 +359,24 @@ private fun calculateCollapsibleArcParams(
             ifFalse = 0f.rf,
         )
 
-    val activeStartShift = -halfThicknessDegrees * (1f.rf - activeScale)
+    // On a full circle, the round caps at both ends of the indicator merge while it slides into
+    // its end, so that at progress 1 it closes into a ring without a pinch at its start. Half of
+    // the closing sweep moves the start back, the other half moves the end forward. Without a slide
+    // (a gap of 0, or a dot that doesn't collapse), it closes at progress 1. A dot under the min
+    // progress, on a circle too short for its gap and thickness, is left as it is.
+    val closingFraction = isOne.select(ifTrue = 1f.rf, ifFalse = outroSlideProgress)
+    // Selects on isFullCircle first, so that a constant sweep under 360 folds this to 0.
+    val closingSweep =
+        isFullCircle.select(
+            ifTrue =
+                underMinProgress.select(
+                    ifTrue = 0f.rf,
+                    ifFalse = thicknessDegrees * closingFraction,
+                ),
+            ifFalse = 0f.rf,
+        )
+
+    val activeStartShift = -halfThicknessDegrees * (1f.rf - activeScale) - closingSweep / 2f.rf
     val shiftedActiveStartBase = drawActiveStartBase + activeStartShift
 
     val maxActiveSweep = max(0f.rf, sweepAngle - gapAngleDegrees - 2f.rf * thicknessDegrees)
@@ -366,13 +389,14 @@ private fun calculateCollapsibleArcParams(
             ifTrue = MIN_SWEEP_ANGLE,
             ifFalse =
                 isOne.select(
-                    ifTrue = sweepAngle - thicknessDegrees,
+                    ifTrue = sweepAngle - thicknessDegrees + closingSweep,
                     ifFalse =
                         overMaxProgress.select(
                             ifTrue =
                                 activeSweepBase +
                                     thicknessDegrees * (1.0f.rf - remainingScale) +
-                                    gapAngleDegrees * outroSlideProgress,
+                                    gapAngleDegrees * outroSlideProgress +
+                                    closingSweep,
                             ifFalse = activeSweepBase,
                         ),
                 ),
@@ -480,10 +504,14 @@ private fun calculateAnimatedProgress(
 
     // Guards very short arcs, where the two ends would take more than the whole arc.
     val clampedEndFraction = min(endFraction, 0.5f.rf)
+    // The same as e * introScale + (1 - 2 * e) * barProgress + e * outroScale, with e the
+    // clampedEndFraction, written so that it is exactly 1 once the bar and both springs
+    // reach 1, and exactly 0 at their start, without float rounding. The geometry checks for
+    // progress 1 exactly, for example to close a full circle.
     val easedProgress =
-        clampedEndFraction * introScale +
-            (1f.rf - 2f.rf * clampedEndFraction) * barProgress +
-            clampedEndFraction * outroScale
+        barProgress +
+            clampedEndFraction * (introScale - barProgress) +
+            clampedEndFraction * (outroScale - barProgress)
 
     return countDown.select(ifTrue = 1.0f.rf - easedProgress, ifFalse = easedProgress)
 }
