@@ -28,8 +28,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.filters.MediumTest
 import androidx.test.filters.SdkSuppress
+import androidx.test.screenshot.matchers.MSSIMMatcher
 import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressEnabled
 import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressEnabledRtl
+import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressFullRing100Progress
+import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressFullRing99Progress
 import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressIndicatorCollapse4Progress
 import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressIndicatorCollapse96Progress
 import androidx.wear.compose.remote.material3.previews.RemoteCurvedProgressIndicatorCollapseNoFadeOut96Progress
@@ -56,6 +59,8 @@ class RemoteCurvedProgressIndicatorTest {
         RemoteScreenshotTestRule(
             moduleDirectory = SCREENSHOT_GOLDEN_DIRECTORY,
             context = ApplicationProvider.getApplicationContext(),
+            // The default threshold of 0.98 doesn't catch a pinch in a full ring.
+            matcher = MSSIMMatcher(threshold = 0.999),
         )
 
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -97,6 +102,20 @@ class RemoteCurvedProgressIndicatorTest {
     fun indicator_noCollapse_100_progress() {
         remoteComposeTestRule.runScreenshotTest(remoteCreationDisplayInfo = creationDisplayInfo) {
             ComponentContainer { RemoteCurvedProgressNoCollapse100Progress() }
+        }
+    }
+
+    @Test
+    fun indicator_fullRing_99_progress() {
+        remoteComposeTestRule.runScreenshotTest(remoteCreationDisplayInfo = creationDisplayInfo) {
+            ComponentContainer { RemoteCurvedProgressFullRing99Progress() }
+        }
+    }
+
+    @Test
+    fun indicator_fullRing_100_progress() {
+        remoteComposeTestRule.runScreenshotTest(remoteCreationDisplayInfo = creationDisplayInfo) {
+            ComponentContainer { RemoteCurvedProgressFullRing100Progress() }
         }
     }
 

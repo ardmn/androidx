@@ -74,7 +74,9 @@ private val RADIANS_TO_DEGREES = (180f / PI.toFloat()).rf
  * @param sweepAngle The total sweep angle (magnitude) of the progress arc in degrees, for example,
  *   90 degrees. Negative values are coerced to 0 (nothing is drawn when [sweepAngle] is 0 or
  *   negative); use [reverseDirection] to sweep counter-clockwise. With 360 degrees or more, the
- *   indicator closes into a full ring at progress 1f.
+ *   indicator closes into a full ring at progress 1f. With a [gapAngleDegrees] above 0 and a
+ *   [dotCollapsible] dot, the two ends of the indicator move toward each other and merge in the
+ *   last part of the progress before 1f, rather than snapping closed at 1f.
  * @param colors [RemoteProgressIndicatorColors] that will be used to resolve the indicator and
  *   track color.
  * @param strokeWidth Width of the arc in dp. Negative values are coerced to 0; nothing is drawn

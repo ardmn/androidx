@@ -16,16 +16,20 @@
 
 package androidx.wear.compose.remote.material3
 
+import androidx.compose.remote.creation.compose.layout.RemoteComposable
 import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.fillMaxSize
 import androidx.compose.remote.creation.compose.state.RemoteFloat
+import androidx.compose.remote.creation.compose.state.rc
 import androidx.compose.remote.creation.compose.state.rdp
 import androidx.compose.remote.creation.compose.state.rf
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.PI
 import kotlin.math.asin
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import org.junit.Rule
 import org.junit.Test
@@ -51,13 +55,13 @@ class RemoteCircularProgressIndicatorTest {
                     endAngle = endAngle.rf,
                     strokeWidth = StrokeWidthDp.rdp,
                     gapSize = gapDp.rdp,
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
-            assertThat(painter.countPixels(::isTrackColor)).isEqualTo(0)
+            assertThat(painter.countPixels(::isTrack)).isEqualTo(0)
             for (degrees in 0 until 360) {
-                assertThat(isIndicatorColor(painter.ringColorAt(degrees.toFloat()))).isTrue()
+                assertThat(isIndicator(painter.ringColorAt(degrees.toFloat()))).isTrue()
             }
         }
     }
@@ -72,15 +76,15 @@ class RemoteCircularProgressIndicatorTest {
                 endAngle = 45f.rf,
                 strokeWidth = StrokeWidthDp.rdp,
                 gapSize = 0.rdp,
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
 
-        assertThat(painter.countPixels(::isTrackColor)).isEqualTo(0)
-        assertThat(isIndicatorColor(painter.ringColorAt(270f))).isTrue()
+        assertThat(painter.countPixels(::isTrack)).isEqualTo(0)
+        assertThat(isIndicator(painter.ringColorAt(270f))).isTrue()
         val openRegionColor = painter.ringColorAt(90f)
-        assertThat(isIndicatorColor(openRegionColor)).isFalse()
-        assertThat(isTrackColor(openRegionColor)).isFalse()
+        assertThat(isIndicator(openRegionColor)).isFalse()
+        assertThat(isTrack(openRegionColor)).isFalse()
     }
 
     @Test
@@ -94,13 +98,13 @@ class RemoteCircularProgressIndicatorTest {
                     endAngle = startAngle.rf,
                     strokeWidth = StrokeWidthDp.rdp,
                     gapSize = gapDp.rdp,
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
-            assertThat(painter.countPixels(::isIndicatorColor)).isEqualTo(0)
+            assertThat(painter.countPixels(::isIndicator)).isEqualTo(0)
             for (degrees in 0 until 360) {
-                assertThat(isTrackColor(painter.ringColorAt(degrees.toFloat()))).isTrue()
+                assertThat(isTrack(painter.ringColorAt(degrees.toFloat()))).isTrue()
             }
         }
     }
@@ -123,11 +127,11 @@ class RemoteCircularProgressIndicatorTest {
                     endAngle = startAngle.rf,
                     strokeWidth = StrokeWidthDp.rdp,
                     gapSize = 0.rdp,
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
-            val dot = painter.boundsOf(::isIndicatorColor)
+            val dot = painter.boundsOf(::isIndicator)
             val expectedAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
             assertThat(dot.centerX)
                 .isWithin(PixelTolerance)
@@ -155,17 +159,17 @@ class RemoteCircularProgressIndicatorTest {
                 endAngle = 297f.rf,
                 strokeWidth = StrokeWidthDp.rdp,
                 gapSize = 0.rdp,
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
 
-        val fullDotPixels = painter.countPixels(::isIndicatorColor)
+        val fullDotPixels = painter.countPixels(::isIndicator)
         painter.setFloat(ProgressName, halfGapProgress)
         painter.advanceTimeBy(SettledMillis)
-        val halfDotPixels = painter.countPixels(::isIndicatorColor)
+        val halfDotPixels = painter.countPixels(::isIndicator)
         painter.setFloat(ProgressName, 0f)
         painter.advanceTimeBy(SettledMillis)
-        val zeroPixels = painter.countPixels(::isIndicatorColor)
+        val zeroPixels = painter.countPixels(::isIndicator)
 
         assertThat(fullDotPixels).isGreaterThan(0)
         assertThat(halfDotPixels).isGreaterThan(0)
@@ -189,10 +193,10 @@ class RemoteCircularProgressIndicatorTest {
                         endAngle = 270f.rf,
                         strokeWidth = StrokeWidthDp.rdp,
                         gapSize = 0.rdp,
-                        colors = progressIndicatorTestColors(),
+                        colors = testColors(),
                     )
                 }
-                painter.countPixels(::isTrackColor)
+                painter.countPixels(::isTrack)
             }
 
         // A track longer than the gap is an arc, while one within it is at most a smaller dot.
@@ -210,19 +214,23 @@ class RemoteCircularProgressIndicatorTest {
                         modifier = RemoteModifier.fillMaxSize(),
                         strokeWidth = strokeDp.rdp,
                         gapSize = 4.rdp,
-                        colors = progressIndicatorTestColors(),
+                        colors = testColors(),
                     )
                 }
 
-                assertThat(painter.countPixels { isIndicatorColor(it) || isTrackColor(it) })
-                    .isEqualTo(0)
+                assertThat(painter.countPixels { isIndicator(it) || isTrack(it) }).isEqualTo(0)
             }
         }
     }
 
-    /** Returns the color in the middle of the stroke at [degrees]. */
-    private fun DocumentPainterRule.DocumentPainter.ringColorAt(degrees: Float): Color =
-        colorOnCircle(degrees, radiusPx = (CanvasSizePx - StrokeWidthPx) / 2f)
+    private fun DocumentPainterRule.DocumentPainter.ringColorAt(degrees: Float): Color {
+        val arcRadius = (CanvasSizePx - StrokeWidthPx) / 2f
+        val center = CanvasSizePx / 2f
+        val rad = Math.toRadians(degrees.toDouble())
+        val x = (center + arcRadius * cos(rad)).roundToInt()
+        val y = (center + arcRadius * sin(rad)).roundToInt()
+        return colorAt(x, y)
+    }
 
     /** Returns the bounds of the pixels whose color matches [predicate]. */
     private fun DocumentPainterRule.DocumentPainter.boundsOf(
@@ -245,6 +253,18 @@ class RemoteCircularProgressIndicatorTest {
         val chordRatio = (strokePx / (diameter - strokePx)).coerceIn(0f, 1f)
         return (asin(chordRatio) * (360.0 / PI)).toFloat()
     }
+
+    @Composable
+    @RemoteComposable
+    private fun testColors(): RemoteProgressIndicatorColors =
+        RemoteProgressIndicatorDefaults.colors(
+            indicatorColor = Color.Red.rc,
+            trackColor = Color.Blue.rc,
+        )
+
+    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
+
+    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private class PixelBounds(
         val pixelCount: Int,

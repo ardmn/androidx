@@ -25,6 +25,7 @@ import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.size
 import androidx.compose.remote.creation.compose.state.RemoteAnimationSpec
 import androidx.compose.remote.creation.compose.state.RemoteBoolean
+import androidx.compose.remote.creation.compose.state.RemoteColor
 import androidx.compose.remote.creation.compose.state.RemoteEasing
 import androidx.compose.remote.creation.compose.state.RemoteFloat
 import androidx.compose.remote.creation.compose.state.rb
@@ -34,6 +35,7 @@ import androidx.compose.remote.creation.compose.state.rf
 import androidx.compose.remote.creation.compose.state.ri
 import androidx.compose.remote.player.compose.test.utils.TestClock
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.remote.material3.samples.RemoteCircularProgressIndicatorAnimatedSample
 import androidx.wear.compose.remote.material3.samples.RemoteCircularProgressIndicatorSample
 import androidx.wear.compose.remote.material3.samples.RemoteLinearProgressIndicatorAnimatedSample
@@ -66,7 +68,7 @@ class RemoteProgressIndicatorAnimationTest {
                 RemoteCircularProgressIndicator(
                     progress = progress,
                     modifier = RemoteModifier.size(150.rdp),
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
@@ -79,14 +81,14 @@ class RemoteProgressIndicatorAnimationTest {
             RemoteCircularProgressIndicator(
                 progress = RemoteFloat.createNamedRemoteFloat(ProgressName, 2f),
                 modifier = RemoteModifier.size(150.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
-        val full = painter.countPixels(::isIndicatorColor)
+        val full = painter.countPixels(::isIndicator)
 
         painter.setFloat(ProgressName, 0.25f)
         painter.advanceTimeBy(EarlyMillis)
-        val early = painter.countPixels(::isIndicatorColor)
+        val early = painter.countPixels(::isIndicator)
 
         // Because the initial progress of 2f was coerced to 1f before animating, the indicator has
         // already begun shrinking from 1f toward 0.25f after EarlyMillis.
@@ -101,7 +103,7 @@ class RemoteProgressIndicatorAnimationTest {
                 RemoteLinearProgressIndicator(
                     progress = progress,
                     modifier = RemoteModifier.size(150.rdp, 20.rdp),
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
@@ -114,7 +116,7 @@ class RemoteProgressIndicatorAnimationTest {
             RemoteLinearProgressIndicator(
                 progress = progress,
                 modifier = RemoteModifier.size(150.rdp, 20.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
     }
@@ -125,7 +127,7 @@ class RemoteProgressIndicatorAnimationTest {
             RemoteCircularProgressIndicator(
                 progress = progress,
                 modifier = RemoteModifier.size(150.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
     }
@@ -137,7 +139,7 @@ class RemoteProgressIndicatorAnimationTest {
                 segmentCount = SegmentCount.ri,
                 progress = RemoteFloat.createNamedRemoteFloat(ProgressName, 0f),
                 modifier = RemoteModifier.size(150.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
 
@@ -161,10 +163,10 @@ class RemoteProgressIndicatorAnimationTest {
                     if (segmentIndex == 0) firstSegmentOn else false.rb
                 },
                 modifier = RemoteModifier.size(150.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
-        assertThat(painter.countPixels(::isIndicatorColor)).isEqualTo(0)
+        assertThat(painter.countPixels(::isIndicator)).isEqualTo(0)
 
         painter.setBoolean(SegmentName, true)
         painter.advanceTimeBy(EarlyMillis)
@@ -176,11 +178,11 @@ class RemoteProgressIndicatorAnimationTest {
 
         painter.setBoolean(SegmentName, false)
         painter.advanceTimeBy(EarlyMillis)
-        val turningOff = painter.countPixels(::isIndicatorColor)
+        val turningOff = painter.countPixels(::isIndicator)
         painter.advanceTimeBy(LateMillis - EarlyMillis)
-        val nearlyOff = painter.countPixels(::isIndicatorColor)
+        val nearlyOff = painter.countPixels(::isIndicator)
         painter.advanceTimeBy(SettledMillis)
-        val off = painter.countPixels(::isIndicatorColor)
+        val off = painter.countPixels(::isIndicator)
 
         // The segment shrinks back to its start rather than disappearing at once, and its end
         // shrinks with it rather than leaving a full dot behind.
@@ -218,7 +220,7 @@ class RemoteProgressIndicatorAnimationTest {
                 segmentCount = SegmentCount.ri,
                 progress = progress,
                 modifier = RemoteModifier.size(150.rdp),
-                colors = progressIndicatorTestColors(),
+                colors = testColors(),
             )
         }
     }
@@ -233,10 +235,10 @@ class RemoteProgressIndicatorAnimationTest {
                         segmentCount = SegmentCount.ri,
                         progress = (0.5f / SegmentCount).rf,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = progressIndicatorTestColors(),
+                        colors = testColors(),
                     )
                 }
-                .countPixels(::isIndicatorColor)
+                .countPixels(::isIndicator)
         fun pixelsWith(scheme: RemoteMotionScheme): ProgressPixels {
             val painter = painterRule.paintDocument {
                 val firstSegmentOn = RemoteBoolean.createNamedRemoteBoolean(SegmentName, false)
@@ -247,16 +249,16 @@ class RemoteProgressIndicatorAnimationTest {
                             if (segmentIndex == 0) firstSegmentOn else false.rb
                         },
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = progressIndicatorTestColors(),
+                        colors = testColors(),
                     )
                 }
             }
-            val before = painter.countPixels(::isIndicatorColor)
+            val before = painter.countPixels(::isIndicator)
             painter.setBoolean(SegmentName, true)
             painter.advanceTimeBy(HalfLinearSpecMillis)
-            val early = painter.countPixels(::isIndicatorColor)
+            val early = painter.countPixels(::isIndicator)
             painter.advanceTimeBy(SettledMillis)
-            return ProgressPixels(before, early, settled = painter.countPixels(::isIndicatorColor))
+            return ProgressPixels(before, early, settled = painter.countPixels(::isIndicator))
         }
         val overridden = pixelsWith(LinearFastEffectsScheme)
         val standard = pixelsWith(RemoteMotionScheme.standard())
@@ -339,12 +341,12 @@ class RemoteProgressIndicatorAnimationTest {
             painterRule.paintDocument(clock = TestClock(epochMilli = 250L)) {
                 RemoteCircularProgressIndicator(
                     modifier = RemoteModifier.size(150.rdp),
-                    colors = progressIndicatorTestColors(),
+                    colors = testColors(),
                 )
             }
 
-        val indicatorPixels = painter.countPixels(::isIndicatorColor)
-        val trackPixels = painter.countPixels(::isTrackColor)
+        val indicatorPixels = painter.countPixels(::isIndicator)
+        val trackPixels = painter.countPixels(::isTrack)
 
         val indicatorFraction = indicatorPixels.toFloat() / (indicatorPixels + trackPixels)
         assertThat(indicatorFraction).isGreaterThan(0.3f)
@@ -364,14 +366,14 @@ class RemoteProgressIndicatorAnimationTest {
         val painter = painterRule.paintDocument {
             content(RemoteFloat.createNamedRemoteFloat(ProgressName, from))
         }
-        val before = painter.countPixels(::isIndicatorColor)
+        val before = painter.countPixels(::isIndicator)
 
         painter.setFloat(ProgressName, to)
         painter.advanceTimeBy(earlyMillis)
-        val early = painter.countPixels(::isIndicatorColor)
+        val early = painter.countPixels(::isIndicator)
 
         painter.advanceTimeBy(SettledMillis)
-        val settled = painter.countPixels(::isIndicatorColor)
+        val settled = painter.countPixels(::isIndicator)
 
         return ProgressPixels(before = before, early = early, settled = settled)
     }
@@ -385,8 +387,7 @@ class RemoteProgressIndicatorAnimationTest {
         motionScheme: RemoteMotionScheme,
         indicator: @Composable @RemoteComposable (progress: RemoteFloat) -> Unit,
     ) {
-        val halfway =
-            painterRule.paintDocument { indicator(0.5f.rf) }.countPixels(::isIndicatorColor)
+        val halfway = painterRule.paintDocument { indicator(0.5f.rf) }.countPixels(::isIndicator)
         fun pixelsWith(scheme: RemoteMotionScheme) =
             indicatorPixelsAroundChange(
                 from = 0.25f,
@@ -419,7 +420,7 @@ class RemoteProgressIndicatorAnimationTest {
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val color = colorAt(x, y)
-                if (isIndicatorColor(color) || isTrackColor(color)) {
+                if (isIndicator(color) || isTrack(color)) {
                     left = min(left, x)
                     top = min(top, y)
                     right = max(right, x)
@@ -441,12 +442,12 @@ class RemoteProgressIndicatorAnimationTest {
             while (radius <= outerRadius) {
                 val x = (centerX + radius * cos(angle)).roundToInt()
                 val y = (centerY + radius * sin(angle)).roundToInt()
-                if (isIndicatorColor(colorAt(x, y))) rayThickness += RayStep
+                if (isIndicator(colorAt(x, y))) rayThickness += RayStep
                 radius += RayStep
             }
             thickness = max(thickness, rayThickness)
         }
-        return IndicatorFrame(pixels = countPixels(::isIndicatorColor), thickness = thickness)
+        return IndicatorFrame(pixels = countPixels(::isIndicator), thickness = thickness)
     }
 
     /** Returns how many circles this document draws, counting the operations of all containers. */
@@ -459,6 +460,18 @@ class RemoteProgressIndicatorAnimationTest {
             else -> 0
         }
     }
+
+    @Composable
+    @RemoteComposable
+    private fun testColors(): RemoteProgressIndicatorColors =
+        RemoteProgressIndicatorDefaults.colors(
+            indicatorColor = RemoteColor.Red,
+            trackColor = RemoteColor.Blue,
+        )
+
+    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
+
+    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private class ProgressPixels(val before: Int, val early: Int, val settled: Int) {
         /** Checks that the indicator grew gradually from [before] to [settled]. */

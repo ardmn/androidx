@@ -34,34 +34,35 @@ import kotlin.math.sin
 internal const val AntiAliasMarginPx = 1.5f
 
 /**
- * The spacing of the samples of [countRingSamplesNotIndicator]. Half a pixel, so that consecutive
- * samples are never a pixel apart and no pixel of the ring is skipped.
+ * The spacing of the samples of [countRingSamplesNotIndicator] on the circle it samples. Half a
+ * pixel, so that consecutive samples within the sampled depth of the stroke stay under a pixel
+ * apart and no pixel there is skipped.
  */
 internal const val RingSampleSpacingPx = 0.5f
 
 /**
- * Progress indicator colors whose indicator and track are told apart by [isIndicatorColor] and
- * [isTrackColor]: a red indicator and a blue track.
+ * Progress indicator colors whose indicator and track are told apart by [isIndicator] and
+ * [isTrack]: a red indicator and a blue track.
  */
 @Composable
 @RemoteComposable
-internal fun progressIndicatorTestColors(): RemoteProgressIndicatorColors =
+internal fun testColors(): RemoteProgressIndicatorColors =
     RemoteProgressIndicatorDefaults.colors(
         indicatorColor = Color.Red.rc,
         trackColor = Color.Blue.rc,
     )
 
 /**
- * Whether [color] is mostly the indicator color of [progressIndicatorTestColors]. A pixel that the
- * indicator covers less than half, at an anti-aliased edge, is not counted.
+ * Whether [color] reads as the red indicator color of [testColors]: red above half and blue below
+ * half. Alpha is not checked.
  */
-internal fun isIndicatorColor(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
+internal fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
 
 /**
- * Whether [color] is mostly the track color of [progressIndicatorTestColors]. A pixel that the
- * track covers less than half, at an anti-aliased edge, is not counted.
+ * Whether [color] reads as the blue track color of [testColors]: blue above half and red below
+ * half. Alpha is not checked.
  */
-internal fun isTrackColor(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
+internal fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
 /** Converts the length [px] along a circle of [radiusPx] into the angle it spans, in degrees. */
 internal fun arcDegrees(px: Float, radiusPx: Float): Float =
@@ -109,7 +110,7 @@ internal fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
         val degrees = minOf(fromDegrees + angleStep * angleStepDegrees, toDegrees)
         (-radialSteps..radialSteps).count { radialStep ->
             val radius = radiusPx + radialStep * sampleSpacingPx
-            !isIndicatorColor(colorOnCircle(degrees, radius))
+            !isIndicator(colorOnCircle(degrees, radius))
         }
     }
 }
