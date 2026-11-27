@@ -19,7 +19,6 @@ package androidx.wear.compose.remote.material3
 import androidx.compose.remote.creation.compose.layout.RemoteComposable
 import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.size
-import androidx.compose.remote.creation.compose.state.RemoteColor
 import androidx.compose.remote.creation.compose.state.RemoteDp
 import androidx.compose.remote.creation.compose.state.RemoteFloat
 import androidx.compose.remote.creation.compose.state.asRemoteDp
@@ -53,12 +52,12 @@ class RemoteProgressIndicatorUnitTest {
                 startAngle = 270f.rf,
                 endAngle = 90f.rf,
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
 
-        val rightPixels = painter.countRegionPixels(110 until 200, ::isIndicator)
-        val farLeftPixels = painter.countRegionPixels(0 until 80, ::isIndicator)
+        val rightPixels = painter.countRegionPixels(110 until 200, ::isIndicatorColor)
+        val farLeftPixels = painter.countRegionPixels(0 until 80, ::isIndicatorColor)
         assertThat(rightPixels).isGreaterThan(0)
         assertThat(farLeftPixels).isEqualTo(0)
     }
@@ -72,12 +71,12 @@ class RemoteProgressIndicatorUnitTest {
                 startAngle = 270f.rf,
                 endAngle = 90f.rf,
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
 
-        val rightPixels = painter.countRegionPixels(110 until 200, ::isIndicator)
-        val farLeftPixels = painter.countRegionPixels(0 until 80, ::isIndicator)
+        val rightPixels = painter.countRegionPixels(110 until 200, ::isIndicatorColor)
+        val farLeftPixels = painter.countRegionPixels(0 until 80, ::isIndicatorColor)
         assertThat(rightPixels).isGreaterThan(0)
         assertThat(farLeftPixels).isEqualTo(0)
     }
@@ -89,7 +88,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 sweepAngle = (-90f).rf,
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(constantNegative.countDrawnPixels()).isEqualTo(0)
@@ -99,7 +98,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 sweepAngle = RemoteFloat.createNamedRemoteFloat(SweepName, 90f),
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(dynamicPainter.countDrawnPixels()).isGreaterThan(0)
@@ -115,7 +114,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 sweepAngle = (-90f).rf,
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(constantNegative.countDrawnPixels()).isEqualTo(0)
@@ -125,7 +124,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 sweepAngle = RemoteFloat.createNamedRemoteFloat(SweepName, 90f),
                 modifier = RemoteModifier.size(200.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(dynamicPainter.countDrawnPixels()).isGreaterThan(0)
@@ -141,7 +140,7 @@ class RemoteProgressIndicatorUnitTest {
             RemoteLinearProgressIndicator(
                 progress = 0.5f.rf,
                 strokeWidth = (-8).rdp,
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(defaultHeightNegative.countDrawnPixels()).isEqualTo(0)
@@ -153,7 +152,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 strokeWidth = 0.rdp,
                 modifier = RemoteModifier.size(150.rdp, 20.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(explicitHeightZero.countDrawnPixels()).isEqualTo(0)
@@ -163,7 +162,7 @@ class RemoteProgressIndicatorUnitTest {
                 progress = 0.5f.rf,
                 strokeWidth = namedStrokeWidth(12f),
                 modifier = RemoteModifier.size(150.rdp, 20.rdp),
-                colors = testColors(),
+                colors = progressIndicatorTestColors(),
             )
         }
         assertThat(dynamicPainter.countDrawnPixels()).isGreaterThan(0)
@@ -181,14 +180,14 @@ class RemoteProgressIndicatorUnitTest {
                         progress = 0.5f.rf,
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
                 { strokeWidth ->
                     RemoteCircularProgressIndicator(
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
                 { strokeWidth ->
@@ -196,7 +195,7 @@ class RemoteProgressIndicatorUnitTest {
                         progress = 0.5f.rf,
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
                 { strokeWidth ->
@@ -204,7 +203,7 @@ class RemoteProgressIndicatorUnitTest {
                         progress = 0.5f.rf,
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
                 { strokeWidth ->
@@ -213,7 +212,7 @@ class RemoteProgressIndicatorUnitTest {
                         progress = 0.5f.rf,
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
                 { strokeWidth ->
@@ -222,7 +221,7 @@ class RemoteProgressIndicatorUnitTest {
                         segmentValue = { (it < 2).rb },
                         strokeWidth = strokeWidth,
                         modifier = RemoteModifier.size(150.rdp),
-                        colors = testColors(),
+                        colors = progressIndicatorTestColors(),
                     )
                 },
             )
@@ -255,7 +254,7 @@ class RemoteProgressIndicatorUnitTest {
         RemoteFloat.createNamedRemoteFloat(StrokeWidthName, initialDp).asRemoteDp()
 
     private fun DocumentPainterRule.DocumentPainter.countDrawnPixels(): Int = countPixels { color ->
-        isIndicator(color) || isTrack(color)
+        isIndicatorColor(color) || isTrackColor(color)
     }
 
     private fun DocumentPainterRule.DocumentPainter.countRegionPixels(
@@ -272,18 +271,6 @@ class RemoteProgressIndicatorUnitTest {
         }
         return count
     }
-
-    @Composable
-    @RemoteComposable
-    private fun testColors(): RemoteProgressIndicatorColors =
-        RemoteProgressIndicatorDefaults.colors(
-            indicatorColor = RemoteColor.Red,
-            trackColor = RemoteColor.Blue,
-        )
-
-    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
-
-    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private companion object {
         const val SweepName = "sweep"
