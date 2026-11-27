@@ -32,10 +32,9 @@ import org.robolectric.annotation.Config
 
 /**
  * Pixel tests of the full ring rule of the `sweepAngle` KDoc: with 360 degrees or more, the
- * indicator is a full ring at progress 1f, as RemoteCircularProgressIndicator and Wear Material3
- * CircularProgressIndicator close a full circle at progress 1f. Below 360 degrees, the indicator
- * and its round caps stay within the sweep; on a full circle, they start at `startAngle` until the
- * end of the outro closes the ring.
+ * indicator is a full ring at progress 1f. Below 360 degrees, the indicator and its round caps stay
+ * within the sweep. On a full circle, the indicator starts at `startAngle` until the end of its
+ * outro, where its two ends merge into the ring.
  */
 @Config(sdk = [35], qualifiers = "w1000dp-h500dp-mdpi")
 @RunWith(RobolectricTestRunner::class)
@@ -80,7 +79,7 @@ class RemoteCurvedProgressIndicatorUnitTest {
             // Then the whole ring is the indicator, with no pinch and no track
             assertWithMessage("$case").that(painter.countPixels(::isTrackColor)).isEqualTo(0)
             assertWithMessage("$case")
-                .that(painter.countRingSamplesNotIndicator(0f, 360f))
+                .that(painter.countDefaultRingSamplesNotIndicator(0f, 360f))
                 .isEqualTo(0)
         }
     }
@@ -100,43 +99,46 @@ class RemoteCurvedProgressIndicatorUnitTest {
                 padding = 0.rdp,
             )
         }
-        val closed = painter.countRingSamplesNotIndicator(around = startAngle)
+        val closedMissingSamples = painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
 
         // When progress leaves 1, then returns to it
         painter.setFloat(ProgressName, 0.99f)
-        val reopened = painter.countRingSamplesNotIndicator(around = startAngle)
+        val reopenedMissingSamples =
+            painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
         painter.setFloat(ProgressName, 1f)
-        val closedAgain = painter.countRingSamplesNotIndicator(around = startAngle)
+        val closedAgainMissingSamples =
+            painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
 
         // Then the ring opens at the start angle, and closes again
-        assertThat(closed).isEqualTo(0)
-        assertThat(reopened).isGreaterThan(0)
-        assertThat(closedAgain).isEqualTo(0)
+        assertThat(closedMissingSamples).isEqualTo(0)
+        assertThat(reopenedMissingSamples).isGreaterThan(0)
+        assertThat(closedAgainMissingSamples).isEqualTo(0)
     }
 
     @Test
     fun progressOne_sweepChangingAcross360_closesRingOnlyForFullCircle() {
         // Given an indicator at progress 1 with a sweep of 360
         val startAngle = 270f
+        val sweepName = "sweep"
         val painter = painterRule.paintDocument {
             RemoteCurvedProgressIndicator(
                 progress = 1f.rf,
                 modifier = RemoteModifier.fillMaxSize(),
                 startAngle = startAngle.rf,
-                sweepAngle = RemoteFloat.createNamedRemoteFloat(SweepName, 360f),
+                sweepAngle = RemoteFloat.createNamedRemoteFloat(sweepName, 360f),
                 colors = progressIndicatorTestColors(),
                 strokeWidth = StrokeWidthDp.rdp,
                 padding = 0.rdp,
             )
         }
-        val fullCircleMissing = painter.countRingSamplesNotIndicator(0f, 360f)
+        val fullCircleMissing = painter.countDefaultRingSamplesNotIndicator(0f, 360f)
 
         // When the sweep drops under 360, then returns to 360
-        painter.setFloat(SweepName, 300f)
+        painter.setFloat(sweepName, 300f)
         val openArcInsideStart = painter.isIndicatorOnRing(startAngle + EdgeMarginDegrees)
         val openArcBeforeStart = painter.isIndicatorOnRing(startAngle - EdgeMarginDegrees)
-        painter.setFloat(SweepName, 360f)
-        val fullCircleAgainMissing = painter.countRingSamplesNotIndicator(0f, 360f)
+        painter.setFloat(sweepName, 360f)
+        val fullCircleAgainMissing = painter.countDefaultRingSamplesNotIndicator(0f, 360f)
 
         // Then the ring is closed at 360, and the open arc starts at the start angle
         assertThat(fullCircleMissing).isEqualTo(0)
@@ -206,9 +208,9 @@ class RemoteCurvedProgressIndicatorUnitTest {
                 countDown = true.rb,
             )
         }
-        val firstFrameMissing = painter.countRingSamplesNotIndicator(0f, 360f)
+        val firstFrameMissing = painter.countDefaultRingSamplesNotIndicator(0f, 360f)
         painter.advanceTimeBy(SettledMillis)
-        val settledMissing = painter.countRingSamplesNotIndicator(0f, 360f)
+        val settledMissing = painter.countDefaultRingSamplesNotIndicator(0f, 360f)
 
         // Then the whole ring is the indicator from the first frame, with no track
         assertThat(firstFrameMissing).isEqualTo(0)
@@ -217,39 +219,72 @@ class RemoteCurvedProgressIndicatorUnitTest {
     }
 
     @Test
+    fun introOutroFullCircle_countingDownBelowOne_opensRingAtStartAngle() {
+        // Given a full circle counting down, closed at progress 1
+        val startAngle = 270f
+        val painter = painterRule.paintDocument {
+            RemoteIntroOutroCurvedProgressIndicator(
+                progress = RemoteFloat.createNamedRemoteFloat(ProgressName, 1f),
+                modifier = RemoteModifier.fillMaxSize(),
+                startAngle = startAngle.rf,
+                sweepAngle = 360f.rf,
+                colors = progressIndicatorTestColors(),
+                strokeWidth = StrokeWidthDp.rdp,
+                padding = 0.rdp,
+                countDown = true.rb,
+            )
+        }
+        painter.advanceTimeBy(SettledMillis)
+        val closedMissingSamples = painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
+
+        // When progress leaves 1, and the animations settle
+        painter.setFloat(ProgressName, 0.5f)
+        painter.advanceTimeBy(SettledMillis)
+        val openMissingSamples = painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
+
+        // Then the ring opens at the start angle
+        assertThat(closedMissingSamples).isEqualTo(0)
+        assertThat(openMissingSamples).isGreaterThan(0)
+    }
+
+    @Test
     fun fullCircle_progressApproachingOne_closesPinchContinuously() {
-        // A progress step of 1/2000 is 0.18 degrees of a 360 degree sweep, and the outro moves the
-        // ends a few times faster, about a pixel per step along this ring. A ring that closes
-        // continuously therefore has at most one pixel of the ring missing a step before progress
-        // 1, two angles of samples half a pixel apart, while a ring that snaps closed at progress
-        // 1 still has its whole pinch there.
+        // Given a full circle with a gap, and the pinch of two round caps that just touch at the
+        // start angle, which an open arc just under 360 degrees draws at progress 1
+        val startAngle = 270f
+        fun paintIndicator(progress: Float, sweepAngle: Float) = painterRule.paintDocument {
+            RemoteCurvedProgressIndicator(
+                progress = progress.rf,
+                modifier = RemoteModifier.fillMaxSize(),
+                startAngle = startAngle.rf,
+                sweepAngle = sweepAngle.rf,
+                colors = progressIndicatorTestColors(),
+                strokeWidth = StrokeWidthDp.rdp,
+                padding = 0.rdp,
+                gapAngleDegrees = GapAngleDegrees.rf,
+            )
+        }
+        val touchingCapsMissingSamples =
+            paintIndicator(progress = 1f, sweepAngle = 359.9f)
+                .countPinchSamplesNotIndicator(aroundDegrees = startAngle)
+        // A step of 1/2000 is 0.18 degrees of a 360 degree sweep, under a third of a pixel along
+        // this ring.
         val progressStep = 1f / 2000f
-        val maxMissingSamplesForOneStep = ringSamplesAcrossStroke(StrokeWidthPx) * 2
         val progresses = (20 downTo 0).map { 1f - it * progressStep }
 
-        // Given a full circle with a gap
         // When its progress approaches 1
         val missingSamples = progresses.map { progress ->
-            painterRule
-                .paintDocument {
-                    RemoteCurvedProgressIndicator(
-                        progress = progress.rf,
-                        modifier = RemoteModifier.fillMaxSize(),
-                        startAngle = 270f.rf,
-                        sweepAngle = 360f.rf,
-                        colors = progressIndicatorTestColors(),
-                        strokeWidth = StrokeWidthDp.rdp,
-                        padding = 0.rdp,
-                        gapAngleDegrees = GapAngleDegrees.rf,
-                    )
-                }
-                .countRingSamplesNotIndicator(around = 270f)
+            paintIndicator(progress = progress, sweepAngle = 360f)
+                .countPinchSamplesNotIndicator(aroundDegrees = startAngle)
         }
 
-        // Then the pinch at the start angle shrinks without a jump, to nothing at progress 1
+        // Then the pinch shrinks to nothing at progress 1, and a step before it, the ends already
+        // overlap, where a ring that snaps closed at progress 1 still has touching caps
+        assertThat(touchingCapsMissingSamples).isGreaterThan(0)
         assertThat(missingSamples).isInOrder(Comparator.reverseOrder<Int>())
         assertThat(missingSamples.first()).isGreaterThan(0)
-        assertThat(missingSamples[missingSamples.size - 2]).isAtMost(maxMissingSamplesForOneStep)
+        assertThat(missingSamples[missingSamples.lastIndex - 1])
+            .isLessThan(touchingCapsMissingSamples)
         assertThat(missingSamples.last()).isEqualTo(0)
     }
 
@@ -276,7 +311,7 @@ class RemoteCurvedProgressIndicatorUnitTest {
     }
 
     @Test
-    fun openArc_progressOne_keepsRoundCapsWithinSweep() {
+    fun openArc_progressOne_fillsSweepBetweenItsRoundCaps() {
         for (sweepAngle in listOf(90f, 300f, 355f)) {
             // Given an open arc at progress 1
             val startAngle = 135f
@@ -300,7 +335,7 @@ class RemoteCurvedProgressIndicatorUnitTest {
             val capCenterInset = arcDegrees(StrokeWidthPx / 2f, RingRadiusPx)
             assertWithMessage(message)
                 .that(
-                    painter.countRingSamplesNotIndicator(
+                    painter.countDefaultRingSamplesNotIndicator(
                         fromDegrees = startAngle + capCenterInset,
                         toDegrees = endAngle - capCenterInset,
                     )
@@ -319,8 +354,11 @@ class RemoteCurvedProgressIndicatorUnitTest {
         }
     }
 
-    /** Counts the samples not in the indicator color on the ring of the default stroke. */
-    private fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
+    /**
+     * Counts the samples not in the indicator color from [fromDegrees] to [toDegrees] on the ring
+     * of [StrokeWidthPx] and no padding.
+     */
+    private fun DocumentPainterRule.DocumentPainter.countDefaultRingSamplesNotIndicator(
         fromDegrees: Float,
         toDegrees: Float,
     ): Int =
@@ -332,14 +370,17 @@ class RemoteCurvedProgressIndicatorUnitTest {
         )
 
     /**
-     * Counts the samples not in the indicator color on the ring of the default stroke, within two
-     * stroke widths of [around], which covers both round caps meeting there.
+     * Counts the samples not in the indicator color on the ring of [StrokeWidthPx] and no padding,
+     * within two stroke widths of [aroundDegrees], which covers both round caps meeting there.
      */
-    private fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
-        around: Float
+    private fun DocumentPainterRule.DocumentPainter.countPinchSamplesNotIndicator(
+        aroundDegrees: Float
     ): Int {
         val twoStrokesDegrees = arcDegrees(2f * StrokeWidthPx, RingRadiusPx)
-        return countRingSamplesNotIndicator(around - twoStrokesDegrees, around + twoStrokesDegrees)
+        return countDefaultRingSamplesNotIndicator(
+            fromDegrees = aroundDegrees - twoStrokesDegrees,
+            toDegrees = aroundDegrees + twoStrokesDegrees,
+        )
     }
 
     /** Whether the middle of the stroke of the default ring at [degrees] is the indicator. */
@@ -359,7 +400,6 @@ class RemoteCurvedProgressIndicatorUnitTest {
          */
         const val SettledMillis = 3000L
         const val ProgressName = "progress"
-        const val SweepName = "sweep"
 
         /**
          * The radius of the middle of the stroke, inset by the [paddingPx] from the edge of the
