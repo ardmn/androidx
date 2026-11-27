@@ -16,20 +16,16 @@
 
 package androidx.wear.compose.remote.material3
 
-import androidx.compose.remote.creation.compose.layout.RemoteComposable
 import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.fillMaxSize
 import androidx.compose.remote.creation.compose.state.RemoteFloat
-import androidx.compose.remote.creation.compose.state.rc
 import androidx.compose.remote.creation.compose.state.rdp
 import androidx.compose.remote.creation.compose.state.rf
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.PI
 import kotlin.math.asin
 import kotlin.math.cos
-import kotlin.math.roundToInt
 import kotlin.math.sin
 import org.junit.Rule
 import org.junit.Test
@@ -223,14 +219,9 @@ class RemoteCircularProgressIndicatorTest {
         }
     }
 
-    private fun DocumentPainterRule.DocumentPainter.ringColorAt(degrees: Float): Color {
-        val arcRadius = (CanvasSizePx - StrokeWidthPx) / 2f
-        val center = CanvasSizePx / 2f
-        val rad = Math.toRadians(degrees.toDouble())
-        val x = (center + arcRadius * cos(rad)).roundToInt()
-        val y = (center + arcRadius * sin(rad)).roundToInt()
-        return colorAt(x, y)
-    }
+    /** Returns the color in the middle of the stroke at [degrees]. */
+    private fun DocumentPainterRule.DocumentPainter.ringColorAt(degrees: Float): Color =
+        colorOnCircle(degrees, radiusPx = (CanvasSizePx - StrokeWidthPx) / 2f)
 
     /** Returns the bounds of the pixels whose color matches [predicate]. */
     private fun DocumentPainterRule.DocumentPainter.boundsOf(
@@ -253,18 +244,6 @@ class RemoteCircularProgressIndicatorTest {
         val chordRatio = (strokePx / (diameter - strokePx)).coerceIn(0f, 1f)
         return (asin(chordRatio) * (360.0 / PI)).toFloat()
     }
-
-    @Composable
-    @RemoteComposable
-    private fun testColors(): RemoteProgressIndicatorColors =
-        RemoteProgressIndicatorDefaults.colors(
-            indicatorColor = Color.Red.rc,
-            trackColor = Color.Blue.rc,
-        )
-
-    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
-
-    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private class PixelBounds(
         val pixelCount: Int,

@@ -194,6 +194,47 @@ private fun RemoteCurvedProgressIndicatorCollapseNoFadeOut96ProgressPreview(
     }
 }
 
+// Full Circle Demos
+@WearPreviewDevices
+@Composable
+private fun RemoteCurvedProgressFullRing99ProgressPreview(
+    @PreviewParameter(ProfilePreviewParameterProvider::class) profile: Profile
+) {
+    RemoteContentPreview(profile = profile) {
+        Container { RemoteCurvedProgressFullRing99Progress() }
+    }
+}
+
+@WearPreviewDevices
+@Composable
+private fun RemoteCurvedProgressFullRing100ProgressPreview(
+    @PreviewParameter(ProfilePreviewParameterProvider::class) profile: Profile
+) {
+    RemoteContentPreview(profile = profile) {
+        Container { RemoteCurvedProgressFullRing100Progress() }
+    }
+}
+
+@Composable
+fun RemoteCurvedProgressFullRing99Progress() {
+    RemoteCurvedProgressIndicator(
+        modifier = RemoteModifier.size(150.rdp),
+        progress = 0.99f.rf,
+        startAngle = 270f.rf,
+        sweepAngle = 360f.rf,
+    )
+}
+
+@Composable
+fun RemoteCurvedProgressFullRing100Progress() {
+    RemoteCurvedProgressIndicator(
+        modifier = RemoteModifier.size(150.rdp),
+        progress = 1.0f.rf,
+        startAngle = 270f.rf,
+        sweepAngle = 360f.rf,
+    )
+}
+
 @WearPreviewDevices
 @Composable
 private fun RemoteCurvedProgressIndicatorCustomColorPreview(

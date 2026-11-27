@@ -19,7 +19,6 @@ package androidx.wear.compose.remote.material3
 import androidx.compose.remote.creation.compose.layout.RemoteComposable
 import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.size
-import androidx.compose.remote.creation.compose.state.RemoteColor
 import androidx.compose.remote.creation.compose.state.RemoteDp
 import androidx.compose.remote.creation.compose.state.RemoteFloat
 import androidx.compose.remote.creation.compose.state.asRemoteDp
@@ -272,18 +271,6 @@ class RemoteProgressIndicatorUnitTest {
         }
         return count
     }
-
-    @Composable
-    @RemoteComposable
-    private fun testColors(): RemoteProgressIndicatorColors =
-        RemoteProgressIndicatorDefaults.colors(
-            indicatorColor = RemoteColor.Red,
-            trackColor = RemoteColor.Blue,
-        )
-
-    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
-
-    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private companion object {
         const val SweepName = "sweep"

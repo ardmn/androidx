@@ -61,7 +61,18 @@ internal fun animateProgress(
  * [endAngle]. Angles that are equal modulo 360 degrees give a full 360 degree circle.
  */
 internal fun circularFullSweep(startAngle: RemoteFloat, endAngle: RemoteFloat): RemoteFloat =
-    360f.rf - ((startAngle - endAngle) % 360f.rf + 360f.rf) % 360f.rf
+    FullCircleDegrees -
+        ((startAngle - endAngle) % FullCircleDegrees + FullCircleDegrees) % FullCircleDegrees
+
+/**
+ * Returns whether an arc sweeping [sweepAngle] degrees is a full circle, which a progress indicator
+ * closes into a ring at full progress.
+ */
+internal fun isFullCircleSweep(sweepAngle: RemoteFloat): RemoteBoolean =
+    sweepAngle.isGreaterThanOrEqualTo(FullCircleDegrees)
+
+/** The sweep of a full circle, in degrees. */
+private val FullCircleDegrees = 360f.rf
 
 /** The geometry of the ring of a circular progress indicator, centered in its canvas. */
 internal class CircularArcGeometry(
