@@ -113,5 +113,7 @@ internal fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
         (0..angleSteps).map { minOf(fromDegrees + it * angleStepDegrees, toDegrees) }
 
     val samples = sampleDegrees.flatMap { degrees -> sampleRadiiPx.map { degrees to it } }
-    return samples.count { (degrees, radius) -> !isIndicator(colorOnCircle(degrees, radius)) }
+    return samples.count { (degrees, sampleRadiusPx) ->
+        !isIndicator(colorOnCircle(degrees, sampleRadiusPx))
+    }
 }
