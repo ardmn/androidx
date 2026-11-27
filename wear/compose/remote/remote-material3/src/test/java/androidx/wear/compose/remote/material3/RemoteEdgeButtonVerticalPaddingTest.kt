@@ -73,8 +73,8 @@ private const val ScreenSizeDp = 227
 
 /**
  * Checks that the container of [RemoteEdgeButton] (its clickable, drawn part) has the bounds,
- * pixels and bottom gap of the Wear M3 [EdgeButton] of the same size, which gives every expected
- * value.
+ * pixels and bottom gap of the Wear M3 [EdgeButton] of the same size, the source of every expected
+ * value, and that the gap takes no clicks.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w${ScreenSizeDp}dp-h${ScreenSizeDp}dp-xhdpi")
@@ -181,7 +181,8 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
 
     /**
      * Shows a [RemoteEdgeButton] of [buttonSize] at the bottom of the screen and returns the state
-     * that, set to `true`, shows the Wear M3 [EdgeButton] of the same size in its place.
+     * that, set to `true`, shows the Wear M3 [EdgeButton] of the same size in its place, and set to
+     * `false`, shows the remote button again.
      *
      * @param remoteModifier The modifier passed to [RemoteEdgeButton].
      * @param wearM3Modifier The modifier passed to [EdgeButton], on top of its alignment.
@@ -284,8 +285,8 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
 
     /**
      * For each of [xFractions], the rows, from top to bottom, of the screen's pixel column at that
-     * fraction of its width that show [ContainerColor], within [tolerance] on each channel. The
-     * screen is captured once for all columns.
+     * fraction of its width that are [isContainerColor]. The screen is captured once for all
+     * columns.
      */
     private fun RcPlayerTestRule.containerPixelRows(
         xFractions: List<Float>,
@@ -298,7 +299,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         }
     }
 
-    /** Returns whether [color] is [ContainerColor] within [tolerance] on each RGB channel. */
+    /** Returns whether [color] is [ContainerColor], within [tolerance] on each RGB channel. */
     private fun isContainerColor(color: Color, tolerance: Float): Boolean =
         abs(color.red - ContainerColor.red) < tolerance &&
             abs(color.green - ContainerColor.green) < tolerance &&
