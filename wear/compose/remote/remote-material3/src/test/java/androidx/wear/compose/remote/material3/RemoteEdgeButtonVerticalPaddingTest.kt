@@ -72,8 +72,8 @@ private const val ScreenSizeDp = 227
 
 /**
  * Checks that [RemoteEdgeButton] follows the layout of the Wear Material3 [EdgeButton]: its
- * container (the clickable and drawn part) has the same bounds and pixels, the same gap to the
- * bottom edge of the screen, and, in the embedded
+ * container (the clickable and drawn part) has the same bounds, the same first and last drawn rows
+ * in three pixel columns, the same gap to the bottom edge of the screen, and, in the embedded
  * [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer], the gap takes no clicks.
  *
  * Expected values come from the Wear Material3 [EdgeButton] rendered in the same place at the same
@@ -115,11 +115,11 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
         showWearMaterial3.value = true
         playerRule.waitForIdle()
-        val expected = columnFractions.map { playerRule.containerPixelRows(it) }
+        val expected = playerRule.containerPixelRows(columnFractions)
 
         showWearMaterial3.value = false
         playerRule.waitForIdle()
-        val actual = columnFractions.map { playerRule.containerPixelRows(it) }
+        val actual = playerRule.containerPixelRows(columnFractions)
 
         for ((index, fraction) in columnFractions.withIndex()) {
             assertRowsMatch("Container rows at x = $fraction", actual[index], expected[index])
@@ -184,7 +184,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
 
         assertDpEqual("Wear Material3 container height", expected.height, 0.dp)
         assertDpEqual("Container height", actual.height, expected.height)
-        assertThat(playerRule.containerPixelRows()).isEmpty()
+        assertThat(playerRule.containerPixelRows(listOf(0.5f)).single()).isEmpty()
     }
 
     /** A Wear Material3 [EdgeButtonSize] and the [RemoteEdgeButtonSize] that mirrors it. */
@@ -295,17 +295,23 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     }
 
     /**
-     * The rows, from top to bottom, of the screen's pixel column at [xFraction] of its width that
-     * show [ContainerColor], within [ColorChannelTolerance] on each channel.
+     * For each of [xFractions], the rows, from top to bottom, of the screen's pixel column at that
+     * fraction of its width that show [ContainerColor], within [tolerance] on each channel. The
+     * screen is captured once for all columns.
      */
-    private fun RcPlayerTestRule.containerPixelRows(xFraction: Float = 0.5f): List<Int> {
+    private fun RcPlayerTestRule.containerPixelRows(
+        xFractions: List<Float>,
+        tolerance: Float = ColorChannelTolerance,
+    ): List<List<Int>> {
         val pixels = onNodeWithTag(ScreenTag).captureToImage().toPixelMap()
-        val x = (pixels.width * xFraction).toInt()
-        return (0 until pixels.height).filter { y ->
-            val pixel = pixels[x, y]
-            abs(pixel.red - ContainerColor.red) < ColorChannelTolerance &&
-                abs(pixel.green - ContainerColor.green) < ColorChannelTolerance &&
-                abs(pixel.blue - ContainerColor.blue) < ColorChannelTolerance
+        return xFractions.map { xFraction ->
+            val x = (pixels.width * xFraction).toInt()
+            (0 until pixels.height).filter { y ->
+                val pixel = pixels[x, y]
+                abs(pixel.red - ContainerColor.red) < tolerance &&
+                    abs(pixel.green - ContainerColor.green) < tolerance &&
+                    abs(pixel.blue - ContainerColor.blue) < tolerance
+            }
         }
     }
 
@@ -379,10 +385,10 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         private val ScreenSize = ScreenSizeDp.dp
 
         /**
-         * Half a pixel at this test's xhdpi density (2 px per dp). Compose lays out in whole pixels
-         * and the bounds are read back in dp as floats, so an edge that is not on a whole pixel can
-         * be off by up to half a pixel. With the whole-dp sizes used here the measured difference
-         * is 0. A missing or doubled vertical padding moves an edge by 12 times this tolerance.
+         * Half a pixel at this test's xhdpi density (2 px per dp). Both buttons are laid out in
+         * whole pixels, and every size here is a whole number of dp, so every edge lands on a pixel
+         * and the measured difference is 0; the tolerance only absorbs the float read-back in dp. A
+         * missing or doubled vertical padding moves an edge by 12 times this tolerance.
          */
         private val PixelRoundingTolerance = 0.25.dp
 
