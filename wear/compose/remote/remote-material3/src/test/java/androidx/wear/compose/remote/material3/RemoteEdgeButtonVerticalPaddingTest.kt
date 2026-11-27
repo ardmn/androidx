@@ -72,13 +72,9 @@ import org.robolectric.annotation.Config
 private const val ScreenSizeDp = 227
 
 /**
- * Checks that [RemoteEdgeButton] follows the layout of the Wear M3 [EdgeButton]: its container (the
- * clickable and drawn part) has the same bounds, the same first and last drawn rows in three pixel
- * columns, the same gap to the bottom edge of the screen, and, in the embedded
- * [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer], the gap takes no clicks.
- *
- * Expected values come from the Wear M3 [EdgeButton] rendered in the same place at the same size,
- * never from the code under test.
+ * Checks that the container of [RemoteEdgeButton] (its clickable, drawn part) has the bounds,
+ * pixels and bottom gap of the Wear M3 [EdgeButton] of the same size, which gives every expected
+ * value.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w${ScreenSizeDp}dp-h${ScreenSizeDp}dp-xhdpi")
@@ -184,11 +180,8 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     }
 
     /**
-     * Shows a [RemoteEdgeButton] of [buttonSize], with a [ContainerColor] container, at the bottom
-     * of a [ScreenSizeDp] screen in
-     * [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer]. Set the returned state
-     * to `true` to show the Wear M3 [EdgeButton] of the same size in its place, and to `false` to
-     * show the remote button again.
+     * Shows a [RemoteEdgeButton] of [buttonSize] at the bottom of the screen and returns the state
+     * that, set to `true`, shows the Wear M3 [EdgeButton] of the same size in its place.
      *
      * @param remoteModifier The modifier passed to [RemoteEdgeButton].
      * @param wearM3Modifier The modifier passed to [EdgeButton], on top of its alignment.
@@ -301,14 +294,15 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         val pixels = onNodeWithTag(ScreenTag).captureToImage().toPixelMap()
         return xFractions.map { xFraction ->
             val x = (pixels.width * xFraction).toInt()
-            (0 until pixels.height).filter { y ->
-                val pixel = pixels[x, y]
-                abs(pixel.red - ContainerColor.red) < tolerance &&
-                    abs(pixel.green - ContainerColor.green) < tolerance &&
-                    abs(pixel.blue - ContainerColor.blue) < tolerance
-            }
+            (0 until pixels.height).filter { y -> isContainerColor(pixels[x, y], tolerance) }
         }
     }
+
+    /** Returns whether [color] is [ContainerColor] within [tolerance] on each RGB channel. */
+    private fun isContainerColor(color: Color, tolerance: Float): Boolean =
+        abs(color.red - ContainerColor.red) < tolerance &&
+            abs(color.green - ContainerColor.green) < tolerance &&
+            abs(color.blue - ContainerColor.blue) < tolerance
 
     private fun assertDpEqual(
         what: String,
@@ -378,18 +372,14 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
             )
 
         /**
-         * Half a pixel at this test's xhdpi density (2 px per dp). Both buttons are laid out in
-         * whole pixels, and every size here is a whole number of dp, so every edge lands on a whole
-         * pixel and the expected difference is 0; the tolerance only absorbs the float read-back in
-         * dp. A missing or doubled vertical padding moves an edge by 12 times this tolerance.
+         * Half a pixel at xhdpi: edges land on whole pixels, so this only absorbs the float
+         * read-back in dp. A missing vertical padding moves an edge by 12 times this.
          */
         private val PixelRoundingTolerance = 0.25.dp
 
         /**
-         * One pixel row. The curved corners are anti-aliased, and the two buttons are drawn by
-         * different renderers (Compose for Wear M3, the remote player for the remote button), so
-         * the first or last row of a column can fall on either side of the colour threshold. A
-         * missing vertical padding moves an edge by 6 rows.
+         * One row: two renderers anti-alias the corners, so an edge row can fall on either side of
+         * the colour threshold. A missing vertical padding moves an edge by 6 rows.
          */
         private const val AntiAliasedEdgeRows = 1
 
@@ -397,11 +387,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         private const val ClickActionName = "edgeButtonClick"
         private val ContainerColor = Color.Red
 
-        /**
-         * Half of a colour channel. Both renderers anti-alias the curved edges of the shape, so the
-         * edge pixels of the container are not exactly [ContainerColor].
-         * [containerPixels_matchWearM3EdgeButton] asserts that both containers are found with it.
-         */
+        /** Half a colour channel: anti-aliased edge pixels are not exactly [ContainerColor]. */
         private const val ColorChannelTolerance = 0.5f
     }
 }
