@@ -20,6 +20,7 @@ import androidx.compose.remote.creation.compose.layout.RemoteComposable
 import androidx.compose.remote.creation.compose.state.rc
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.sin
@@ -94,11 +95,11 @@ internal fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
     antiAliasMarginPx: Float = AntiAliasMarginPx,
     sampleSpacingPx: Float = RingSampleSpacingPx,
 ): Int {
-    val halfDepthPx = strokeWidthPx / 2f - antiAliasMarginPx
-    require(halfDepthPx >= 0f) { "A stroke of $strokeWidthPx px has no pixel clear of its edges" }
-    val radialSteps = floor(halfDepthPx / sampleSpacingPx).toInt()
+    require(toDegrees >= fromDegrees) { "No ring from $fromDegrees to $toDegrees degrees" }
+    val radialSteps = ringRadialSteps(strokeWidthPx, antiAliasMarginPx, sampleSpacingPx)
     val angleStepDegrees = arcDegrees(sampleSpacingPx, radiusPx)
-    val angleSteps = floor((toDegrees - fromDegrees) / angleStepDegrees).toInt()
+    // Rounded up, so that the last sample is at toDegrees.
+    val angleSteps = ceil((toDegrees - fromDegrees) / angleStepDegrees).toInt()
     return (0..angleSteps).sumOf { angleStep ->
         val degrees = minOf(fromDegrees + angleStep * angleStepDegrees, toDegrees)
         (-radialSteps..radialSteps).count { radialStep ->
@@ -106,4 +107,25 @@ internal fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
             !isIndicatorColor(colorOnCircle(degrees, radius))
         }
     }
+}
+
+/**
+ * Returns how many samples [countRingSamplesNotIndicator] takes across a stroke of [strokeWidthPx],
+ * at each angle.
+ */
+internal fun ringSamplesAcrossStroke(
+    strokeWidthPx: Float,
+    antiAliasMarginPx: Float = AntiAliasMarginPx,
+    sampleSpacingPx: Float = RingSampleSpacingPx,
+): Int = 2 * ringRadialSteps(strokeWidthPx, antiAliasMarginPx, sampleSpacingPx) + 1
+
+/** The samples on each side of the middle of the stroke, clear of its anti-aliased edges. */
+private fun ringRadialSteps(
+    strokeWidthPx: Float,
+    antiAliasMarginPx: Float,
+    sampleSpacingPx: Float,
+): Int {
+    val halfDepthPx = strokeWidthPx / 2f - antiAliasMarginPx
+    require(halfDepthPx >= 0f) { "A stroke of $strokeWidthPx px has no pixel clear of its edges" }
+    return floor(halfDepthPx / sampleSpacingPx).toInt()
 }
