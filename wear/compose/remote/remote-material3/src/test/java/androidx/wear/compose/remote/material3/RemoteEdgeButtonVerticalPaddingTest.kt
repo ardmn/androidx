@@ -69,15 +69,19 @@ import org.robolectric.annotation.Config
 /**
  * Checks that [RemoteEdgeButton] follows the layout rules of the Wear Material3 [EdgeButton]: the
  * button is [ButtonSize.specHeight] plus [SpecVerticalPadding] above and below, the container (the
- * clickable and drawn part) sits [SpecVerticalPadding] above the bottom edge of the screen, and the
- * padding takes no clicks.
+ * clickable and drawn part) sits [SpecVerticalPadding] above the bottom edge of the screen, and, in
+ * the embedded [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer], the padding
+ * takes no clicks.
  *
  * Expected values come from Wear Material3, never from the code under test: either the spec values
- * of `androidx.wear.compose.material3.EdgeButton` ([SpecVerticalPadding], [ButtonSize.specHeight]),
- * or the Wear Material3 [EdgeButton] rendered in the same place at the same size.
+ * in [WearMaterial3EdgeButtonSpec], or the Wear Material3 [EdgeButton] rendered in the same place
+ * at the same size.
  */
+/** The side of the square screen, the size of a large round watch (454 px at xhdpi). */
+private const val ScreenSizeDp = 227
+
 @RunWith(ParameterizedRobolectricTestRunner::class)
-@Config(sdk = [35], qualifiers = "w227dp-h227dp-xhdpi")
+@Config(sdk = [35], qualifiers = "w${ScreenSizeDp}dp-h${ScreenSizeDp}dp-xhdpi")
 class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     @get:Rule val playerRule = RcPlayerTestRule()
 
@@ -124,7 +128,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
 
     @Test
     fun containerPixels_matchWearMaterial3EdgeButton() {
-        // Given: columns through the left curved corner, the centre and the right curved corner.
+        // Given: a column left of the centre, the centre and a column right of the centre.
         val columnFractions = listOf(0.3f, 0.5f, 0.7f)
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
         showWearMaterial3.value = true
@@ -221,8 +225,8 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     /**
      * A Wear Material3 [EdgeButtonSize] and the [RemoteEdgeButtonSize] that mirrors it.
      *
-     * @property specHeight The container height of [wearMaterial3] in Wear Material3
-     *   (`EdgeButtonSize.maximumHeight`, internal there, so it is restated here).
+     * @property specHeight The container height of [wearMaterial3] in Wear Material3, from
+     *   [WearMaterial3EdgeButtonSpec].
      */
     class ButtonSize(
         private val name: String,
@@ -242,18 +246,31 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
                     "ExtraSmall",
                     RemoteEdgeButtonSize.ExtraSmall,
                     EdgeButtonSize.ExtraSmall,
-                    46.dp,
+                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
                 ),
-                ButtonSize("Small", RemoteEdgeButtonSize.Small, EdgeButtonSize.Small, 56.dp),
-                ButtonSize("Medium", RemoteEdgeButtonSize.Medium, EdgeButtonSize.Medium, 70.dp),
-                ButtonSize("Large", RemoteEdgeButtonSize.Large, EdgeButtonSize.Large, 96.dp),
+                ButtonSize(
+                    "Small",
+                    RemoteEdgeButtonSize.Small,
+                    EdgeButtonSize.Small,
+                    WearMaterial3EdgeButtonSpec.SmallHeight,
+                ),
+                ButtonSize(
+                    "Medium",
+                    RemoteEdgeButtonSize.Medium,
+                    EdgeButtonSize.Medium,
+                    WearMaterial3EdgeButtonSpec.MediumHeight,
+                ),
+                ButtonSize(
+                    "Large",
+                    RemoteEdgeButtonSize.Large,
+                    EdgeButtonSize.Large,
+                    WearMaterial3EdgeButtonSpec.LargeHeight,
+                ),
             )
 
-        /** Wear Material3 `EdgeButtonVerticalPadding`, internal there, so it is restated here. */
-        private val SpecVerticalPadding = 3.dp
+        private val SpecVerticalPadding = WearMaterial3EdgeButtonSpec.VerticalPadding
 
-        /** The side of the square screen, the size of a large round watch (454 px at xhdpi). */
-        private val ScreenSize = 227.dp
+        private val ScreenSize = ScreenSizeDp.dp
 
         /**
          * Half a pixel at this test's xhdpi density (2 px per dp). Compose lays out in whole pixels
@@ -274,6 +291,14 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         private const val ScreenTag = "screen"
         private const val ClickActionName = "edgeButtonClick"
         private val ContainerColor = Color.Red
+
+        /**
+         * Half of a colour channel. Wear Material3 darkens the container edges with a radial
+         * gradient and both renderers anti-alias the shape, so container pixels are not exactly
+         * [ContainerColor]. [containerPixels_matchWearMaterial3EdgeButton] asserts that both
+         * containers are found with it.
+         */
+        private const val ColorChannelTolerance = 0.5f
     }
 
     private val context: Context = ApplicationProvider.getApplicationContext()
@@ -355,13 +380,16 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
 
     /**
      * The rows, from top to bottom, of the screen's pixel column at [xFraction] of its width that
-     * show [ContainerColor].
+     * show [ContainerColor], within [ColorChannelTolerance] on each channel.
      */
     private fun RcPlayerTestRule.containerRows(xFraction: Float = 0.5f): List<Int> {
         val pixels = onNodeWithTag(ScreenTag).captureToImage().toPixelMap()
         val x = (pixels.width * xFraction).toInt()
         return (0 until pixels.height).filter { y ->
-            pixels[x, y].let { it.red > 0.5f && it.green < 0.5f && it.blue < 0.5f }
+            val pixel = pixels[x, y]
+            abs(pixel.red - ContainerColor.red) < ColorChannelTolerance &&
+                abs(pixel.green - ContainerColor.green) < ColorChannelTolerance &&
+                abs(pixel.blue - ContainerColor.blue) < ColorChannelTolerance
         }
     }
 

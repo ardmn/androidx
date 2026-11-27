@@ -105,8 +105,8 @@ import androidx.compose.runtime.Immutable
  *   directly on [RemoteEdgeButton] to alter content sizing; the button is designed to take the full
  *   width of the screen and its height is determined by [buttonSize], plus
  *   [RemoteEdgeButtonDefaults.VerticalPadding] above and below. When animating the button to
- *   appear/disappear, a height modifier can change the height of the component, padding included,
- *   but won't change the space available for the content.
+ *   appear/disappear, a height modifier can change the height of the component, padding included;
+ *   the content width is still computed from [buttonSize].
  * @param buttonSize The size of the button, defaults to [RemoteEdgeButtonSize.Small].
  * @param enabled Controls the enabled state of the button. When false, this component will not
  *   respond to user input.
@@ -186,8 +186,8 @@ public fun RemoteEdgeButton(
 /**
  * Size of the [RemoteEdgeButton].
  *
- * @param maximumHeight The maximum height of the button's container. The button adds
- *   [RemoteEdgeButtonDefaults.VerticalPadding] above and below it.
+ * @param maximumHeight The height of the button's container when the caller sets no height. The
+ *   button adds [RemoteEdgeButtonDefaults.VerticalPadding] above and below it.
  */
 @Immutable
 public class RemoteEdgeButtonSize internal constructor(public val maximumHeight: RemoteDp) {

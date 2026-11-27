@@ -62,10 +62,11 @@ class RemoteEdgeButtonUnitTest {
         val buttonWidthDp = 500f / 3f
         val sizes =
             listOf(
-                RemoteEdgeButtonSize.ExtraSmall to 46f,
-                RemoteEdgeButtonSize.Small to 56f,
-                RemoteEdgeButtonSize.Medium to 70f,
-                RemoteEdgeButtonSize.Large to 96f,
+                RemoteEdgeButtonSize.ExtraSmall to
+                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight.value,
+                RemoteEdgeButtonSize.Small to WearMaterial3EdgeButtonSpec.SmallHeight.value,
+                RemoteEdgeButtonSize.Medium to WearMaterial3EdgeButtonSpec.MediumHeight.value,
+                RemoteEdgeButtonSize.Large to WearMaterial3EdgeButtonSpec.LargeHeight.value,
             )
 
         for ((size, heightDp) in sizes) {
@@ -176,8 +177,8 @@ class RemoteEdgeButtonUnitTest {
     }
 
     private fun expectedEdgeButtonContentWidthDp(widthDp: Float, heightDp: Float): Float {
-        val extraSmallHeight = 46f
-        val bottomPadding = 3f
+        val extraSmallHeight = WearMaterial3EdgeButtonSpec.ExtraSmallHeight.value
+        val bottomPadding = WearMaterial3EdgeButtonSpec.VerticalPadding.value
         val extraSmallEllipseHeight = 58f
         val buttonToEllipseRatio = 1.42f
         val targetSidePadding = 20f
