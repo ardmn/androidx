@@ -33,8 +33,8 @@ import org.robolectric.annotation.Config
 /**
  * Pixel tests of the full ring rule of the `sweepAngle` KDoc: with 360 degrees or more, the
  * indicator is a full ring at progress 1f. Below 360 degrees, the indicator and its round caps stay
- * within the sweep. On a full circle, the indicator starts at `startAngle` until the end of its
- * outro, where its two ends merge into the ring.
+ * within the sweep. On a full circle, the indicator starts at `startAngle` until the outro slides
+ * into its end, where its two ends move toward each other and merge into the ring.
  */
 @Config(sdk = [35], qualifiers = "w1000dp-h500dp-mdpi")
 @RunWith(RobolectricTestRunner::class)
@@ -238,13 +238,13 @@ class RemoteCurvedProgressIndicatorUnitTest {
         val closedMissingSamples = painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
 
         // When progress leaves 1, and the animations settle
-        painter.setFloat(ProgressName, 0.5f)
+        painter.setFloat(ProgressName, 0.99f)
         painter.advanceTimeBy(SettledMillis)
-        val openMissingSamples = painter.countPinchSamplesNotIndicator(aroundDegrees = startAngle)
 
-        // Then the ring opens at the start angle
+        // Then the ring opens: the round cap of the indicator ends at the start angle
         assertThat(closedMissingSamples).isEqualTo(0)
-        assertThat(openMissingSamples).isGreaterThan(0)
+        assertThat(painter.isIndicatorOnRing(startAngle + EdgeMarginDegrees)).isTrue()
+        assertThat(painter.isIndicatorOnRing(startAngle - EdgeMarginDegrees)).isFalse()
     }
 
     @Test
@@ -267,8 +267,8 @@ class RemoteCurvedProgressIndicatorUnitTest {
         val touchingCapsMissingSamples =
             paintIndicator(progress = 1f, sweepAngle = 359.9f)
                 .countPinchSamplesNotIndicator(aroundDegrees = startAngle)
-        // A step of 1/2000 is 0.18 degrees of a 360 degree sweep, under a third of a pixel along
-        // this ring.
+        // A step of 1/2000 is 0.18 degrees of a 360 degree sweep; the outro moves the ends a few
+        // times faster, about a pixel per step along this ring.
         val progressStep = 1f / 2000f
         val progresses = (20 downTo 0).map { 1f - it * progressStep }
 
@@ -311,7 +311,7 @@ class RemoteCurvedProgressIndicatorUnitTest {
     }
 
     @Test
-    fun openArc_progressOne_fillsSweepBetweenItsRoundCaps() {
+    fun openArc_progressOne_fillsSweepWithRoundCapsInsideIt() {
         for (sweepAngle in listOf(90f, 300f, 355f)) {
             // Given an open arc at progress 1
             val startAngle = 135f
