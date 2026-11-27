@@ -25,7 +25,6 @@ import androidx.compose.remote.creation.compose.modifier.RemoteModifier
 import androidx.compose.remote.creation.compose.modifier.size
 import androidx.compose.remote.creation.compose.state.RemoteAnimationSpec
 import androidx.compose.remote.creation.compose.state.RemoteBoolean
-import androidx.compose.remote.creation.compose.state.RemoteColor
 import androidx.compose.remote.creation.compose.state.RemoteEasing
 import androidx.compose.remote.creation.compose.state.RemoteFloat
 import androidx.compose.remote.creation.compose.state.rb
@@ -35,7 +34,6 @@ import androidx.compose.remote.creation.compose.state.rf
 import androidx.compose.remote.creation.compose.state.ri
 import androidx.compose.remote.player.compose.test.utils.TestClock
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.remote.material3.samples.RemoteCircularProgressIndicatorAnimatedSample
 import androidx.wear.compose.remote.material3.samples.RemoteCircularProgressIndicatorSample
 import androidx.wear.compose.remote.material3.samples.RemoteLinearProgressIndicatorAnimatedSample
@@ -460,18 +458,6 @@ class RemoteProgressIndicatorAnimationTest {
             else -> 0
         }
     }
-
-    @Composable
-    @RemoteComposable
-    private fun testColors(): RemoteProgressIndicatorColors =
-        RemoteProgressIndicatorDefaults.colors(
-            indicatorColor = RemoteColor.Red,
-            trackColor = RemoteColor.Blue,
-        )
-
-    private fun isIndicator(color: Color): Boolean = color.red > 0.5f && color.blue < 0.5f
-
-    private fun isTrack(color: Color): Boolean = color.blue > 0.5f && color.red < 0.5f
 
     private class ProgressPixels(val before: Int, val early: Int, val settled: Int) {
         /** Checks that the indicator grew gradually from [before] to [settled]. */
