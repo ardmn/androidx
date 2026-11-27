@@ -103,9 +103,10 @@ import androidx.compose.runtime.Immutable
  * @param onClick Will be called when the user clicks the button.
  * @param modifier Modifier to be applied to the button. Size-related modifiers should not be used
  *   directly on [RemoteEdgeButton] to alter content sizing; the button is designed to take the full
- *   width of the screen and its height is determined by [buttonSize]. When animating the button to
- *   appear/disappear, a height modifier can change the height of the component, but won't change
- *   the space available for the content.
+ *   width of the screen and its height is determined by [buttonSize], plus
+ *   [RemoteEdgeButtonDefaults.VerticalPadding] above and below. When animating the button to
+ *   appear/disappear, a height modifier can change the height of the component, padding included,
+ *   but won't change the space available for the content.
  * @param buttonSize The size of the button, defaults to [RemoteEdgeButtonSize.Small].
  * @param enabled Controls the enabled state of the button. When false, this component will not
  *   respond to user input.
@@ -134,6 +135,9 @@ public fun RemoteEdgeButton(
     RemoteBox(
         modifier =
             modifier
+                // Like Wear Material3 EdgeButton, keeps the container off the bottom edge of the
+                // screen. The shape and content width maths assume this padding.
+                .padding(vertical = RemoteEdgeButtonDefaults.VerticalPadding)
                 .fillMaxWidth()
                 .height(buttonSize.maximumHeight)
                 .semantics(mergeDescendants = true) { role = RemoteRole.Button }
@@ -182,7 +186,8 @@ public fun RemoteEdgeButton(
 /**
  * Size of the [RemoteEdgeButton].
  *
- * @param maximumHeight The maximum height of the button.
+ * @param maximumHeight The maximum height of the button's container. The button adds
+ *   [RemoteEdgeButtonDefaults.VerticalPadding] above and below it.
  */
 @Immutable
 public class RemoteEdgeButtonSize internal constructor(public val maximumHeight: RemoteDp) {
