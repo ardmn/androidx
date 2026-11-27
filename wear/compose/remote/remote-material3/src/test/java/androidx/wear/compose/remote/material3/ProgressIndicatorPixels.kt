@@ -100,17 +100,18 @@ internal fun DocumentPainterRule.DocumentPainter.countRingSamplesNotIndicator(
     sampleSpacingPx: Float = RingSampleSpacingPx,
 ): Int {
     require(toDegrees >= fromDegrees) { "No ring from $fromDegrees to $toDegrees degrees" }
+
     val halfDepthPx = strokeWidthPx / 2f - antiAliasMarginPx
     require(halfDepthPx >= 0f) { "A stroke of $strokeWidthPx px has no pixel clear of its edges" }
+
     val radialSteps = floor(halfDepthPx / sampleSpacingPx).toInt()
+    val sampleRadiiPx = (-radialSteps..radialSteps).map { radiusPx + it * sampleSpacingPx }
     val angleStepDegrees = arcDegrees(sampleSpacingPx, radiusPx)
     // Rounded up, so that the last sample is at toDegrees.
     val angleSteps = ceil((toDegrees - fromDegrees) / angleStepDegrees).toInt()
-    return (0..angleSteps).sumOf { angleStep ->
-        val degrees = minOf(fromDegrees + angleStep * angleStepDegrees, toDegrees)
-        (-radialSteps..radialSteps).count { radialStep ->
-            val radius = radiusPx + radialStep * sampleSpacingPx
-            !isIndicator(colorOnCircle(degrees, radius))
-        }
-    }
+    val sampleDegrees =
+        (0..angleSteps).map { minOf(fromDegrees + it * angleStepDegrees, toDegrees) }
+
+    val samples = sampleDegrees.flatMap { degrees -> sampleRadiiPx.map { degrees to it } }
+    return samples.count { (degrees, radius) -> !isIndicator(colorOnCircle(degrees, radius)) }
 }
