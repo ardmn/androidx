@@ -71,15 +71,13 @@ import org.robolectric.annotation.Config
 private const val ScreenSizeDp = 227
 
 /**
- * Checks that [RemoteEdgeButton] follows the layout rules of the Wear Material3 [EdgeButton]: the
- * button is [ButtonSize.specHeight] plus [SpecVerticalPadding] above and below, the container (the
- * clickable and drawn part) sits [SpecVerticalPadding] above the bottom edge of the screen, and, in
- * the embedded [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer], the padding
- * takes no clicks.
+ * Checks that [RemoteEdgeButton] follows the layout of the Wear Material3 [EdgeButton]: its
+ * container (the clickable and drawn part) has the same bounds and pixels, the same gap to the
+ * bottom edge of the screen, and, in the embedded
+ * [RcPlayer][androidx.compose.remote.player.compose.embedded.RcPlayer], the gap takes no clicks.
  *
- * Expected values come from Wear Material3, never from the code under test: either the spec values
- * in [WearMaterial3EdgeButtonSpec], or the Wear Material3 [EdgeButton] rendered in the same place
- * at the same size.
+ * Expected values come from the Wear Material3 [EdgeButton] rendered in the same place at the same
+ * size, never from the code under test.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w${ScreenSizeDp}dp-h${ScreenSizeDp}dp-xhdpi")
@@ -87,149 +85,109 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
     @get:Rule val playerRule = RcPlayerTestRule()
 
     @Test
-    fun container_endsVerticalPaddingAboveBottomEdge() {
-        // Given
-        playerRule.setEdgeButtonContent()
+    fun bottomGap_matchesWearMaterial3EdgeButton() {
+        val showWearMaterial3 = playerRule.setEdgeButtonContent()
+        val expectedGap =
+            ScreenSize - playerRule.wearMaterial3ContainerBounds(showWearMaterial3).bottom
 
-        // When
-        val container = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val actualGap = ScreenSize - playerRule.containerBounds().bottom
 
-        // Then
-        assertDpEqual("Container bottom", container.bottom, ScreenSize - SpecVerticalPadding)
-    }
-
-    @Test
-    fun container_isButtonSizeTall() {
-        // Given
-        playerRule.setEdgeButtonContent()
-
-        // When
-        val container = playerRule.onNode(hasClickAction()).getBoundsInRoot()
-
-        // Then
-        assertDpEqual("Container height", container.height, buttonSize.specHeight)
+        assertWithMessage("Wear Material3 bottom gap").that(expectedGap).isGreaterThan(0.dp)
+        assertDpEqual("Bottom gap", actualGap, expectedGap)
     }
 
     @Test
     fun containerBounds_matchWearMaterial3EdgeButton() {
-        // Given
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
-        showWearMaterial3.value = true
-        playerRule.waitForIdle()
-        val expected = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val expected = playerRule.wearMaterial3ContainerBounds(showWearMaterial3)
 
-        // When
-        showWearMaterial3.value = false
-        playerRule.waitForIdle()
-        val actual = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val actual = playerRule.containerBounds()
 
-        // Then
         assertDpRectEqual("Container bounds", actual, expected)
     }
 
     @Test
     fun containerPixels_matchWearMaterial3EdgeButton() {
-        // Given: a column left of the centre, the centre and a column right of the centre.
         val columnFractions = listOf(0.3f, 0.5f, 0.7f)
         val showWearMaterial3 = playerRule.setEdgeButtonContent()
         showWearMaterial3.value = true
         playerRule.waitForIdle()
         val expected = columnFractions.map { playerRule.containerPixelRows(it) }
 
-        // When
         showWearMaterial3.value = false
         playerRule.waitForIdle()
         val actual = columnFractions.map { playerRule.containerPixelRows(it) }
 
-        // Then
         for ((index, fraction) in columnFractions.withIndex()) {
             assertRowsMatch("Container rows at x = $fraction", actual[index], expected[index])
         }
     }
 
     @Test
-    fun tapOnBottomVerticalPadding_doesNotClick() {
-        // Given
+    fun tapOnBottomGap_doesNotClick() {
         val clicks = mutableListOf<String>()
-        playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
+        val showWearMaterial3 =
+            playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
+        val wearMaterial3Bottom = playerRule.wearMaterial3ContainerBounds(showWearMaterial3).bottom
 
-        // When
-        playerRule.tapAtCenterX(ScreenSize - SpecVerticalPadding / 2)
+        playerRule.tapAtCenterX((wearMaterial3Bottom + ScreenSize) / 2)
 
-        // Then
+        assertWithMessage("Wear Material3 bottom gap")
+            .that(ScreenSize - wearMaterial3Bottom)
+            .isGreaterThan(0.dp)
         assertThat(clicks).isEmpty()
     }
 
     @Test
     fun tapOnContainer_clicks() {
-        // Given
         val clicks = mutableListOf<String>()
-        playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
+        val showWearMaterial3 =
+            playerRule.setEdgeButtonContent(onNamedAction = { name, _, _ -> clicks += name })
+        val wearMaterial3Container = playerRule.wearMaterial3ContainerBounds(showWearMaterial3)
 
-        // When
-        playerRule.tapAtCenterX(ScreenSize - SpecVerticalPadding - buttonSize.specHeight / 2)
+        playerRule.tapAtCenterX((wearMaterial3Container.top + wearMaterial3Container.bottom) / 2)
 
-        // Then
         assertThat(clicks).containsExactly(ClickActionName)
     }
 
     @Test
     fun callerHeight_includesVerticalPaddingLikeWearMaterial3() {
-        // Given: a caller height such as one used to animate the button in.
+        // A height such as one used to animate the button in.
         val callerHeight = 40.dp
         val showWearMaterial3 =
             playerRule.setEdgeButtonContent(
                 remoteModifier = RemoteModifier.height(callerHeight.value.rdp),
                 wearMaterial3Modifier = Modifier.height(callerHeight),
             )
-        showWearMaterial3.value = true
-        playerRule.waitForIdle()
-        val expected = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val expected = playerRule.wearMaterial3ContainerBounds(showWearMaterial3)
 
-        // When
-        showWearMaterial3.value = false
-        playerRule.waitForIdle()
-        val actual = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val actual = playerRule.containerBounds()
 
-        // Then
         assertDpRectEqual("Container bounds", actual, expected)
     }
 
     @Test
     fun callerHeightBelowTwiceVerticalPadding_leavesNoContainerLikeWearMaterial3() {
-        // Given
-        val callerHeight = SpecVerticalPadding * 2 - 2.dp
+        val callerHeight = 4.dp
         val showWearMaterial3 =
             playerRule.setEdgeButtonContent(
                 remoteModifier = RemoteModifier.height(callerHeight.value.rdp),
                 wearMaterial3Modifier = Modifier.height(callerHeight),
             )
-        showWearMaterial3.value = true
-        playerRule.waitForIdle()
-        val expected = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val expected = playerRule.wearMaterial3ContainerBounds(showWearMaterial3)
 
-        // When
-        showWearMaterial3.value = false
-        playerRule.waitForIdle()
-        val actual = playerRule.onNode(hasClickAction()).getBoundsInRoot()
+        val actual = playerRule.containerBounds()
 
-        // Then
         assertDpEqual("Wear Material3 container height", expected.height, 0.dp)
         assertDpEqual("Container height", actual.height, expected.height)
         assertThat(playerRule.containerPixelRows()).isEmpty()
     }
 
-    /**
-     * A Wear Material3 [EdgeButtonSize] and the [RemoteEdgeButtonSize] that mirrors it.
-     *
-     * @property specHeight The container height of [wearMaterial3] in Wear Material3, from
-     *   [WearMaterial3EdgeButtonSpec].
-     */
+    /** A Wear Material3 [EdgeButtonSize] and the [RemoteEdgeButtonSize] that mirrors it. */
     class ButtonSize(
         private val name: String,
         val remote: RemoteEdgeButtonSize,
         val wearMaterial3: EdgeButtonSize,
-        val specHeight: Dp,
     ) {
         override fun toString(): String = name
     }
@@ -301,6 +259,25 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
         }
         waitForIdle()
         return showWearMaterial3
+    }
+
+    /** The bounds of the container of the button shown, the node with a click action. */
+    private fun RcPlayerTestRule.containerBounds(): DpRect =
+        onNode(hasClickAction()).getBoundsInRoot()
+
+    /**
+     * Shows the Wear Material3 [EdgeButton] in place of the remote button, returns the bounds of
+     * its container, and shows the remote button again.
+     */
+    private fun RcPlayerTestRule.wearMaterial3ContainerBounds(
+        showWearMaterial3: MutableState<Boolean>
+    ): DpRect {
+        showWearMaterial3.value = true
+        waitForIdle()
+        val bounds = containerBounds()
+        showWearMaterial3.value = false
+        waitForIdle()
+        return bounds
     }
 
     /** Taps the screen at its horizontal centre, [y] below its top. */
@@ -375,29 +352,23 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
                     name = "ExtraSmall",
                     remote = RemoteEdgeButtonSize.ExtraSmall,
                     wearMaterial3 = EdgeButtonSize.ExtraSmall,
-                    specHeight = WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
                 ),
                 ButtonSize(
                     name = "Small",
                     remote = RemoteEdgeButtonSize.Small,
                     wearMaterial3 = EdgeButtonSize.Small,
-                    specHeight = WearMaterial3EdgeButtonSpec.SmallHeight,
                 ),
                 ButtonSize(
                     name = "Medium",
                     remote = RemoteEdgeButtonSize.Medium,
                     wearMaterial3 = EdgeButtonSize.Medium,
-                    specHeight = WearMaterial3EdgeButtonSpec.MediumHeight,
                 ),
                 ButtonSize(
                     name = "Large",
                     remote = RemoteEdgeButtonSize.Large,
                     wearMaterial3 = EdgeButtonSize.Large,
-                    specHeight = WearMaterial3EdgeButtonSpec.LargeHeight,
                 ),
             )
-
-        private val SpecVerticalPadding = WearMaterial3EdgeButtonSpec.VerticalPadding
 
         private val ScreenSize = ScreenSizeDp.dp
 
@@ -405,7 +376,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
          * Half a pixel at this test's xhdpi density (2 px per dp). Compose lays out in whole pixels
          * and the bounds are read back in dp as floats, so an edge that is not on a whole pixel can
          * be off by up to half a pixel. With the whole-dp sizes used here the measured difference
-         * is 0. A missing or doubled [SpecVerticalPadding] is 3 dp, 12 times this tolerance.
+         * is 0. A missing or doubled vertical padding moves an edge by 12 times this tolerance.
          */
         private val PixelRoundingTolerance = 0.25.dp
 
@@ -413,7 +384,7 @@ class RemoteEdgeButtonVerticalPaddingTest(private val buttonSize: ButtonSize) {
          * One pixel row. The curved corners are anti-aliased, and the two buttons are drawn by
          * different renderers (Compose for Wear Material3, the remote player for the remote
          * button), so the first or last row of a column can fall on either side of the colour
-         * threshold. The measured difference here is 0. A missing [SpecVerticalPadding] is 6 rows.
+         * threshold. The measured difference here is 0. A missing vertical padding is 6 rows.
          */
         private const val AntiAliasedEdgeRows = 1
 

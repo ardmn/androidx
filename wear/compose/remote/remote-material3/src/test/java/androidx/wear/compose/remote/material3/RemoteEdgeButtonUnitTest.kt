@@ -62,11 +62,10 @@ class RemoteEdgeButtonUnitTest {
         val buttonWidthDp = 500f / 3f
         val sizes =
             listOf(
-                RemoteEdgeButtonSize.ExtraSmall to
-                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight.value,
-                RemoteEdgeButtonSize.Small to WearMaterial3EdgeButtonSpec.SmallHeight.value,
-                RemoteEdgeButtonSize.Medium to WearMaterial3EdgeButtonSpec.MediumHeight.value,
-                RemoteEdgeButtonSize.Large to WearMaterial3EdgeButtonSpec.LargeHeight.value,
+                RemoteEdgeButtonSize.ExtraSmall to 46f,
+                RemoteEdgeButtonSize.Small to 56f,
+                RemoteEdgeButtonSize.Medium to 70f,
+                RemoteEdgeButtonSize.Large to 96f,
             )
 
         for ((size, heightDp) in sizes) {
@@ -94,26 +93,10 @@ class RemoteEdgeButtonUnitTest {
 
         val sizes =
             listOf(
-                Triple(
-                    "ExtraSmall",
-                    RemoteEdgeButtonSize.ExtraSmall,
-                    WearMaterial3EdgeButtonSpec.ExtraSmallHeight,
-                ),
-                Triple(
-                    "Small",
-                    RemoteEdgeButtonSize.Small,
-                    WearMaterial3EdgeButtonSpec.SmallHeight,
-                ),
-                Triple(
-                    "Medium",
-                    RemoteEdgeButtonSize.Medium,
-                    WearMaterial3EdgeButtonSpec.MediumHeight,
-                ),
-                Triple(
-                    "Large",
-                    RemoteEdgeButtonSize.Large,
-                    WearMaterial3EdgeButtonSpec.LargeHeight,
-                ),
+                "ExtraSmall" to RemoteEdgeButtonSize.ExtraSmall,
+                "Small" to RemoteEdgeButtonSize.Small,
+                "Medium" to RemoteEdgeButtonSize.Medium,
+                "Large" to RemoteEdgeButtonSize.Large,
             )
 
         val activeDocument = mutableStateOf<CoreDocument?>(null)
@@ -129,7 +112,7 @@ class RemoteEdgeButtonUnitTest {
             }
         }
 
-        for ((name, buttonSize, specHeight) in sizes) {
+        for ((name, buttonSize) in sizes) {
             val label = "Confirm $name action with long label"
             val document =
                 captureRule.captureDocument(
@@ -161,7 +144,7 @@ class RemoteEdgeButtonUnitTest {
             val expectedMaxWidthPx =
                 expectedEdgeButtonContentWidthDp(
                     widthPx / density,
-                    specHeight.value,
+                    buttonSize.maximumHeight.constantValue,
                 ) * density
 
             val rowDims =
@@ -193,11 +176,11 @@ class RemoteEdgeButtonUnitTest {
     }
 
     private fun expectedEdgeButtonContentWidthDp(widthDp: Float, heightDp: Float): Float {
-        val extraSmallHeight = WearMaterial3EdgeButtonSpec.ExtraSmallHeight.value
-        val bottomPadding = WearMaterial3EdgeButtonSpec.VerticalPadding.value
-        val extraSmallEllipseHeight = WearMaterial3EdgeButtonSpec.ExtraSmallEllipseHeight.value
-        val buttonToEllipseRatio = WearMaterial3EdgeButtonSpec.ButtonToEllipseRatio
-        val targetSidePadding = WearMaterial3EdgeButtonSpec.TargetSidePadding.value
+        val extraSmallHeight = 46f
+        val bottomPadding = 3f
+        val extraSmallEllipseHeight = 58f
+        val buttonToEllipseRatio = 1.42f
+        val targetSidePadding = 20f
 
         val finalFadeProgress = (1f - heightDp / extraSmallHeight).coerceIn(0f, 1f)
         val ellipseHeight =

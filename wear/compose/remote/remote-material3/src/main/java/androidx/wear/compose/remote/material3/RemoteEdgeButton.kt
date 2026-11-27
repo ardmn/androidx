@@ -135,8 +135,6 @@ public fun RemoteEdgeButton(
     RemoteBox(
         modifier =
             modifier
-                // Keeps the container off the bottom edge of the screen. The shape and content
-                // width maths assume this padding.
                 .padding(vertical = RemoteEdgeButtonDefaults.VerticalPadding)
                 .fillMaxWidth()
                 .height(buttonSize.maximumHeight)
